@@ -29,10 +29,10 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, litteral: char) -> Self {
+    pub fn new(token_type: TokenType, litteral: String) -> Self {
         Self {
             token_type,
-            litteral: litteral.to_string(),
+            litteral,
         }
     }
 }
