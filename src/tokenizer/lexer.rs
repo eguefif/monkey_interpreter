@@ -18,42 +18,15 @@ impl Iterator for Lexer<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(next) = self.iter.next() {
             match next {
-                '=' => Some(Token {
-                    token_type: TokenType::Assign,
-                    litteral: next.to_string(),
-                }),
-                '+' => Some(Token {
-                    token_type: TokenType::Plus,
-                    litteral: next.to_string(),
-                }),
-                '{' => Some(Token {
-                    token_type: TokenType::Lbrace,
-                    litteral: next.to_string(),
-                }),
-                '}' => Some(Token {
-                    token_type: TokenType::Rbrace,
-                    litteral: next.to_string(),
-                }),
-                ')' => Some(Token {
-                    token_type: TokenType::Rparen,
-                    litteral: next.to_string(),
-                }),
-                '(' => Some(Token {
-                    token_type: TokenType::Lparen,
-                    litteral: next.to_string(),
-                }),
-                ',' => Some(Token {
-                    token_type: TokenType::Comma,
-                    litteral: next.to_string(),
-                }),
-                ';' => Some(Token {
-                    token_type: TokenType::Semicolon,
-                    litteral: next.to_string(),
-                }),
-                _ => Some(Token {
-                    token_type: TokenType::Illegal,
-                    litteral: next.to_string(),
-                }),
+                '=' => Some(Token::new(TokenType::Assign, next)),
+                '+' => Some(Token::new(TokenType::Plus, next)),
+                ';' => Some(Token::new(TokenType::Semicolon, next)),
+                ',' => Some(Token::new(TokenType::Comma, next)),
+                '{' => Some(Token::new(TokenType::Lbrace, next)),
+                '}' => Some(Token::new(TokenType::Rbrace, next)),
+                '(' => Some(Token::new(TokenType::Lparen, next)),
+                ')' => Some(Token::new(TokenType::Rparen, next)),
+                _ => Some(Token::new(TokenType::Illegal, next)),
             }
         } else {
             None

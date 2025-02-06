@@ -27,3 +27,12 @@ pub struct Token {
     pub token_type: TokenType,
     pub litteral: String,
 }
+
+impl Token {
+    pub fn new(token_type: TokenType, litteral: char) -> Self {
+        Self {
+            token_type,
+            litteral: litteral.to_string(),
+        }
+    }
+}
