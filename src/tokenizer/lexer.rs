@@ -15,6 +15,9 @@ impl<'a> Lexer<'a> {
 }
 impl Iterator for Lexer<'_> {
     type Item = Token;
+
+    // TODO: refactor by extracting.
+    // TODO: refactor use of clone for peekable
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(mut next) = self.iter.next() {
             if next.is_whitespace() {
