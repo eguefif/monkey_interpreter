@@ -1,4 +1,4 @@
-use monkey_interpreter::print_file;
+use monkey_interpreter::interpret;
 use std::env;
 
 fn main() {
@@ -7,6 +7,6 @@ fn main() {
         println!("Usage: monkey FILENAME")
     } else {
         let filename = args[1].clone();
-        print_file(filename);
+        interpret(filename);
     }
 }

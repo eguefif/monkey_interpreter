@@ -1,9 +1,28 @@
-#[derive(Debug)]
+pub mod lexer;
+
+#[derive(Debug, PartialEq)]
 pub enum TokenType {
+    Illegal,
+
+    Ident,
     Int,
+
+    Assign,
+    Plus,
+
+    Comma,
+    Semicolon,
+
+    Lparen,
+    Rparen,
+    Lbrace,
+    Rbrace,
+
+    Function,
+    Let,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
     pub litteral: String,
