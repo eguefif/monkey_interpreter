@@ -43,7 +43,7 @@ impl<'a> Lexer<'a> {
         token_litteral.push(next);
         loop {
             if let Some(next_peek) = self.iter.peek() {
-                if next_peek.is_alphanumeric() {
+                if is_letter(next_peek) {
                     token_litteral.push(*next_peek);
                     self.iter.next();
                 } else {
@@ -86,7 +86,7 @@ impl Iterator for Lexer<'_> {
                 '(' => Some(Token::new(TokenType::Lparen, next.to_string())),
                 ')' => Some(Token::new(TokenType::Rparen, next.to_string())),
                 _ => {
-                    if next.is_alphanumeric() {
+                    if is_letter(&next) {
                         return self.get_alphanumeric_token(next);
                     } else {
                         return Some(Token::new(TokenType::Illegal, next.to_string()));
@@ -97,6 +97,10 @@ impl Iterator for Lexer<'_> {
             None
         }
     }
+}
+
+fn is_letter(letter: &char) -> bool {
+    letter.is_alphanumeric() || *letter == '_'
 }
 
 #[cfg(test)]
