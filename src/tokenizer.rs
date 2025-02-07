@@ -18,6 +18,7 @@ pub enum TokenType {
     Lt,
     Gt,
     Equal,
+    Noteq,
 
     Lparen,
     Rparen,

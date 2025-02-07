@@ -94,7 +94,15 @@ impl Iterator for Lexer<'_> {
                 '<' => Some(Token::new(TokenType::Lt, next.to_string())),
                 '>' => Some(Token::new(TokenType::Gt, next.to_string())),
                 '-' => Some(Token::new(TokenType::Minus, next.to_string())),
-                '!' => Some(Token::new(TokenType::Bang, next.to_string())),
+                '!' => {
+                    if let Some(peek) = self.iter.peek() {
+                        if *peek == '=' {
+                            self.iter.next();
+                            return Some(Token::new(TokenType::Noteq, "!=".to_string()));
+                        }
+                    }
+                    return Some(Token::new(TokenType::Bang, next.to_string()));
+                }
                 '*' => Some(Token::new(TokenType::Asterisk, next.to_string())),
                 '/' => Some(Token::new(TokenType::Slash, next.to_string())),
                 _ => {
@@ -177,7 +185,7 @@ x + y;
 
 let result = add(file, ten);
 !-/*;
-5 < 10 > 5 ==;
+5 < 10 > 5 == != ;
 if (5 < 10) {
     return true;
 } else {
@@ -235,6 +243,7 @@ if (5 < 10) {
             Token::new(TokenType::Gt, ">".to_string()),
             Token::new(TokenType::Int, "5".to_string()),
             Token::new(TokenType::Equal, "==".to_string()),
+            Token::new(TokenType::Noteq, "!=".to_string()),
             Token::new(TokenType::Semicolon, ";".to_string()),
             Token::new(TokenType::If, "if".to_string()),
             Token::new(TokenType::Lparen, "(".to_string()),
