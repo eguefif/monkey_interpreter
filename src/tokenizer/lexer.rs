@@ -1,15 +1,16 @@
 #![allow(dead_code)]
 use crate::tokenizer::{Token, TokenType};
+use std::iter::Peekable;
 use std::str::Chars;
 
 pub struct Lexer<'a> {
-    iter: Chars<'a>,
+    iter: Peekable<Chars<'a>>,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(content: &'a String) -> Self {
         Self {
-            iter: content.chars(),
+            iter: content.chars().clone().peekable(),
         }
     }
 
@@ -40,12 +41,11 @@ impl<'a> Lexer<'a> {
     fn get_token_litteral(&mut self, next: char) -> String {
         let mut token_litteral = String::with_capacity(30);
         token_litteral.push(next);
-        let mut peekable = self.iter.clone().peekable();
         loop {
-            if let Some(next_peek) = peekable.peek() {
+            if let Some(next_peek) = self.iter.peek() {
                 if next_peek.is_alphanumeric() {
+                    token_litteral.push(*next_peek);
                     self.iter.next();
-                    token_litteral.push(peekable.next().unwrap());
                 } else {
                     break;
                 }
@@ -73,7 +73,6 @@ impl<'a> Lexer<'a> {
 impl Iterator for Lexer<'_> {
     type Item = Token;
 
-    // TODO: refactor by extracting.
     // TODO: refactor use of clone for peekable
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(next) = self.get_next_non_whitespace_char() {
