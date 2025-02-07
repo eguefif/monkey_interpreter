@@ -27,13 +27,13 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn read_symbol(&mut self, next: char) -> Option<Token> {
-        let alpha_token = self.get_token_litteral(next);
-        self.get_token(alpha_token)
+        let litteral = self.get_litteral(next);
+        self.get_token(litteral)
     }
 
-    fn get_token_litteral(&mut self, next: char) -> String {
+    fn get_litteral(&mut self, first_char: char) -> String {
         let mut token_litteral = String::with_capacity(30);
-        token_litteral.push(next);
+        token_litteral.push(first_char);
         loop {
             if let Some(next_peek) = self.iter.peek() {
                 if is_letter(next_peek) {
