@@ -26,6 +26,11 @@ pub enum TokenType {
 
     Function,
     Let,
+    If,
+    Else,
+    Return,
+    False,
+    True,
 }
 
 #[derive(Debug, PartialEq)]

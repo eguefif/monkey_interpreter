@@ -53,6 +53,11 @@ impl<'a> Lexer<'a> {
         match token_litteral.as_str() {
             "let" => Some(Token::new(TokenType::Let, token_litteral)),
             "fn" => Some(Token::new(TokenType::Function, token_litteral)),
+            "if" => Some(Token::new(TokenType::If, token_litteral)),
+            "else" => Some(Token::new(TokenType::Else, token_litteral)),
+            "return" => Some(Token::new(TokenType::Return, token_litteral)),
+            "true" => Some(Token::new(TokenType::True, token_litteral)),
+            "false" => Some(Token::new(TokenType::False, token_litteral)),
             _ => {
                 if let Ok(_) = token_litteral.parse::<i128>() {
                     return Some(Token::new(TokenType::Int, token_litteral));
@@ -173,6 +178,11 @@ x + y;
 let result = add(file, ten);
 !-/*;
 5 < 10 > 5 ==;
+if (5 < 10) {
+    return true;
+} else {
+    return false;
+}
         "
         .to_string();
         let lexer = Lexer::new(&input);
@@ -226,6 +236,23 @@ let result = add(file, ten);
             Token::new(TokenType::Int, "5".to_string()),
             Token::new(TokenType::Equal, "==".to_string()),
             Token::new(TokenType::Semicolon, ";".to_string()),
+            Token::new(TokenType::If, "if".to_string()),
+            Token::new(TokenType::Lparen, "(".to_string()),
+            Token::new(TokenType::Int, "5".to_string()),
+            Token::new(TokenType::Lt, "<".to_string()),
+            Token::new(TokenType::Int, "10".to_string()),
+            Token::new(TokenType::Rparen, ")".to_string()),
+            Token::new(TokenType::Lbrace, "{".to_string()),
+            Token::new(TokenType::Return, "return".to_string()),
+            Token::new(TokenType::True, "true".to_string()),
+            Token::new(TokenType::Semicolon, ";".to_string()),
+            Token::new(TokenType::Rbrace, "}".to_string()),
+            Token::new(TokenType::Else, "else".to_string()),
+            Token::new(TokenType::Lbrace, "{".to_string()),
+            Token::new(TokenType::Return, "return".to_string()),
+            Token::new(TokenType::False, "false".to_string()),
+            Token::new(TokenType::Semicolon, ";".to_string()),
+            Token::new(TokenType::Rbrace, "}".to_string()),
         ];
 
         let mut i = 0;
