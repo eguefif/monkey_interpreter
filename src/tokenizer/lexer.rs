@@ -15,22 +15,15 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn get_next_non_whitespace_char(&mut self) -> Option<char> {
-        if let Some(next) = self.iter.next() {
-            if next.is_whitespace() {
-                loop {
-                    if let Some(current) = self.iter.next() {
-                        if !current.is_whitespace() {
-                            return Some(current);
-                        }
-                    } else {
-                        return None;
-                    }
+        loop {
+            if let Some(current) = self.iter.next() {
+                if !current.is_whitespace() {
+                    return Some(current);
                 }
             } else {
-                return Some(next);
+                return None;
             }
         }
-        None
     }
 
     pub fn read_symbol(&mut self, next: char) -> Option<Token> {
