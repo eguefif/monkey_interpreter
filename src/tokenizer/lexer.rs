@@ -33,7 +33,7 @@ impl<'a> Lexer<'a> {
         None
     }
 
-    pub fn get_alphanumeric_token(&mut self, next: char) -> Option<Token> {
+    pub fn read_symbol(&mut self, next: char) -> Option<Token> {
         let alpha_token = self.get_token_litteral(next);
         self.get_token(alpha_token)
     }
@@ -87,7 +87,7 @@ impl Iterator for Lexer<'_> {
                 ')' => Some(Token::new(TokenType::Rparen, next.to_string())),
                 _ => {
                     if is_letter(&next) {
-                        return self.get_alphanumeric_token(next);
+                        return self.read_symbol(next);
                     } else {
                         return Some(Token::new(TokenType::Illegal, next.to_string()));
                     }
