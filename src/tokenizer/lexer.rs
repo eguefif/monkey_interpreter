@@ -70,7 +70,15 @@ impl Iterator for Lexer<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(next) = self.get_next_non_whitespace_char() {
             match next {
-                '=' => Some(Token::new(TokenType::Assign, next.to_string())),
+                '=' => {
+                    if let Some(peek) = self.iter.peek() {
+                        if *peek == '=' {
+                            self.iter.next();
+                            return Some(Token::new(TokenType::Equal, "==".to_string()));
+                        }
+                    }
+                    return Some(Token::new(TokenType::Assign, next.to_string()));
+                }
                 '+' => Some(Token::new(TokenType::Plus, next.to_string())),
                 ';' => Some(Token::new(TokenType::Semicolon, next.to_string())),
                 ',' => Some(Token::new(TokenType::Comma, next.to_string())),
@@ -78,6 +86,12 @@ impl Iterator for Lexer<'_> {
                 '}' => Some(Token::new(TokenType::Rbrace, next.to_string())),
                 '(' => Some(Token::new(TokenType::Lparen, next.to_string())),
                 ')' => Some(Token::new(TokenType::Rparen, next.to_string())),
+                '<' => Some(Token::new(TokenType::Lt, next.to_string())),
+                '>' => Some(Token::new(TokenType::Gt, next.to_string())),
+                '-' => Some(Token::new(TokenType::Minus, next.to_string())),
+                '!' => Some(Token::new(TokenType::Bang, next.to_string())),
+                '*' => Some(Token::new(TokenType::Asterisk, next.to_string())),
+                '/' => Some(Token::new(TokenType::Slash, next.to_string())),
                 _ => {
                     if is_letter(&next) {
                         return self.read_symbol(next);
@@ -155,6 +169,10 @@ let ten = 10;
 let add = fn(x, y) {
 x + y;
 };
+
+let result = add(file, ten);
+!-/*;
+5 < 10 > 5 ==;
         "
         .to_string();
         let lexer = Lexer::new(&input);
@@ -185,6 +203,28 @@ x + y;
             Token::new(TokenType::Ident, "y".to_string()),
             Token::new(TokenType::Semicolon, ";".to_string()),
             Token::new(TokenType::Rbrace, '}'.to_string()),
+            Token::new(TokenType::Semicolon, ";".to_string()),
+            Token::new(TokenType::Let, "let".to_string()),
+            Token::new(TokenType::Ident, "result".to_string()),
+            Token::new(TokenType::Assign, "=".to_string()),
+            Token::new(TokenType::Ident, "add".to_string()),
+            Token::new(TokenType::Lparen, "(".to_string()),
+            Token::new(TokenType::Ident, "file".to_string()),
+            Token::new(TokenType::Comma, ",".to_string()),
+            Token::new(TokenType::Ident, "ten".to_string()),
+            Token::new(TokenType::Rparen, ")".to_string()),
+            Token::new(TokenType::Semicolon, ";".to_string()),
+            Token::new(TokenType::Bang, "!".to_string()),
+            Token::new(TokenType::Minus, "-".to_string()),
+            Token::new(TokenType::Slash, "/".to_string()),
+            Token::new(TokenType::Asterisk, "*".to_string()),
+            Token::new(TokenType::Semicolon, ";".to_string()),
+            Token::new(TokenType::Int, "5".to_string()),
+            Token::new(TokenType::Lt, "<".to_string()),
+            Token::new(TokenType::Int, "10".to_string()),
+            Token::new(TokenType::Gt, ">".to_string()),
+            Token::new(TokenType::Int, "5".to_string()),
+            Token::new(TokenType::Equal, "==".to_string()),
             Token::new(TokenType::Semicolon, ";".to_string()),
         ];
 

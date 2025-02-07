@@ -9,9 +9,15 @@ pub enum TokenType {
 
     Assign,
     Plus,
-
+    Minus,
+    Bang,
+    Asterisk,
+    Slash,
     Comma,
     Semicolon,
+    Lt,
+    Gt,
+    Equal,
 
     Lparen,
     Rparen,
