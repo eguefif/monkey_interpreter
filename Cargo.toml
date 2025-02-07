@@ -7,4 +7,8 @@ edition = "2021"
 name="repl"
 path="src/repl.rs"
 
+[[bin]]
+name="monkey"
+path="src/monkey.rs"
+
 [dependencies]
