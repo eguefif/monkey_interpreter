@@ -59,8 +59,8 @@ impl<'a> Lexer<'a> {
             "true" => Some(Token::new(TokenType::True, token_litteral)),
             "false" => Some(Token::new(TokenType::False, token_litteral)),
             _ => {
-                if let Ok(_) = token_litteral.parse::<i128>() {
-                    return Some(Token::new(TokenType::Int, token_litteral));
+                if let Ok(value) = token_litteral.parse::<i128>() {
+                    return Some(Token::new(TokenType::Int(value), token_litteral));
                 }
                 return Some(Token::new(TokenType::Ident, token_litteral));
             }
@@ -199,12 +199,12 @@ if (5 < 10) {
             Token::new(TokenType::Let, "let".to_string()),
             Token::new(TokenType::Ident, "file".to_string()),
             Token::new(TokenType::Assign, '='.to_string()),
-            Token::new(TokenType::Int, "5".to_string()),
+            Token::new(TokenType::Int(5), "5".to_string()),
             Token::new(TokenType::Semicolon, ';'.to_string()),
             Token::new(TokenType::Let, "let".to_string()),
             Token::new(TokenType::Ident, "ten".to_string()),
             Token::new(TokenType::Assign, '='.to_string()),
-            Token::new(TokenType::Int, "10".to_string()),
+            Token::new(TokenType::Int(10), "10".to_string()),
             Token::new(TokenType::Semicolon, ";".to_string()),
             Token::new(TokenType::Let, "let".to_string()),
             Token::new(TokenType::Ident, "add".to_string()),
@@ -237,19 +237,19 @@ if (5 < 10) {
             Token::new(TokenType::Slash, "/".to_string()),
             Token::new(TokenType::Asterisk, "*".to_string()),
             Token::new(TokenType::Semicolon, ";".to_string()),
-            Token::new(TokenType::Int, "5".to_string()),
+            Token::new(TokenType::Int(5), "5".to_string()),
             Token::new(TokenType::Lt, "<".to_string()),
-            Token::new(TokenType::Int, "10".to_string()),
+            Token::new(TokenType::Int(10), "10".to_string()),
             Token::new(TokenType::Gt, ">".to_string()),
-            Token::new(TokenType::Int, "5".to_string()),
+            Token::new(TokenType::Int(5), "5".to_string()),
             Token::new(TokenType::Equal, "==".to_string()),
             Token::new(TokenType::Noteq, "!=".to_string()),
             Token::new(TokenType::Semicolon, ";".to_string()),
             Token::new(TokenType::If, "if".to_string()),
             Token::new(TokenType::Lparen, "(".to_string()),
-            Token::new(TokenType::Int, "5".to_string()),
+            Token::new(TokenType::Int(5), "5".to_string()),
             Token::new(TokenType::Lt, "<".to_string()),
-            Token::new(TokenType::Int, "10".to_string()),
+            Token::new(TokenType::Int(10), "10".to_string()),
             Token::new(TokenType::Rparen, ")".to_string()),
             Token::new(TokenType::Lbrace, "{".to_string()),
             Token::new(TokenType::Return, "return".to_string()),

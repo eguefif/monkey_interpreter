@@ -5,7 +5,7 @@ pub enum TokenType {
     Illegal,
 
     Ident,
-    Int,
+    Int(i128),
 
     Assign,
     Plus,
