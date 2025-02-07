@@ -12,27 +12,36 @@ impl<'a> Lexer<'a> {
             iter: content.chars(),
         }
     }
+
+    pub fn get_next_non_whitespace_char(&mut self) -> Option<char> {
+        if let Some(next) = self.iter.next() {
+            if next.is_whitespace() {
+                loop {
+                    if let Some(current) = self.iter.next() {
+                        if !current.is_whitespace() {
+                            return Some(current);
+                        }
+                    } else {
+                        return None;
+                    }
+                }
+            } else {
+                return Some(next);
+            }
+        }
+        None
+    }
 }
+
 impl Iterator for Lexer<'_> {
     type Item = Token;
 
     // TODO: refactor by extracting.
     // TODO: refactor use of clone for peekable
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(mut next) = self.iter.next() {
-            if next.is_whitespace() {
-                next = loop {
-                    if let Some(current) = self.iter.next() {
-                        if !current.is_whitespace() {
-                            break current;
-                        }
-                    } else {
-                        return None;
-                    }
-                };
-            }
+        if let Some(next) = self.get_next_non_whitespace_char() {
             if next.is_alphanumeric() {
-                let mut alpha_token = String::with_capacity(20);
+                let mut alpha_token = String::with_capacity(30);
                 alpha_token.push(next);
                 let mut peekable = self.iter.clone().peekable();
                 loop {
