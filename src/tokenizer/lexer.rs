@@ -31,6 +31,43 @@ impl<'a> Lexer<'a> {
         }
         None
     }
+
+    pub fn get_alphanumeric_token(&mut self, next: char) -> Option<Token> {
+        let alpha_token = self.get_token_litteral(next);
+        self.get_token(alpha_token)
+    }
+
+    fn get_token_litteral(&mut self, next: char) -> String {
+        let mut token_litteral = String::with_capacity(30);
+        token_litteral.push(next);
+        let mut peekable = self.iter.clone().peekable();
+        loop {
+            if let Some(next_peek) = peekable.peek() {
+                if next_peek.is_alphanumeric() {
+                    self.iter.next();
+                    token_litteral.push(peekable.next().unwrap());
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        token_litteral
+    }
+
+    fn get_token(&self, token_litteral: String) -> Option<Token> {
+        match token_litteral.as_str() {
+            "let" => Some(Token::new(TokenType::Let, token_litteral)),
+            "fn" => Some(Token::new(TokenType::Function, token_litteral)),
+            _ => {
+                if let Ok(_) = token_litteral.parse::<i128>() {
+                    return Some(Token::new(TokenType::Int, token_litteral));
+                }
+                return Some(Token::new(TokenType::Ident, token_litteral));
+            }
+        }
+    }
 }
 
 impl Iterator for Lexer<'_> {
@@ -51,31 +88,7 @@ impl Iterator for Lexer<'_> {
                 ')' => Some(Token::new(TokenType::Rparen, next.to_string())),
                 _ => {
                     if next.is_alphanumeric() {
-                        let mut alpha_token = String::with_capacity(30);
-                        alpha_token.push(next);
-                        let mut peekable = self.iter.clone().peekable();
-                        loop {
-                            if let Some(next_peek) = peekable.peek() {
-                                if next_peek.is_alphanumeric() {
-                                    self.iter.next();
-                                    alpha_token.push(peekable.next()?);
-                                } else {
-                                    break;
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                        match alpha_token.as_str() {
-                            "let" => Some(Token::new(TokenType::Let, alpha_token)),
-                            "fn" => Some(Token::new(TokenType::Function, alpha_token)),
-                            _ => {
-                                if let Ok(_) = alpha_token.parse::<i128>() {
-                                    return Some(Token::new(TokenType::Int, alpha_token));
-                                }
-                                return Some(Token::new(TokenType::Ident, alpha_token));
-                            }
-                        }
+                        return self.get_alphanumeric_token(next);
                     } else {
                         return Some(Token::new(TokenType::Illegal, next.to_string()));
                     }
