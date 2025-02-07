@@ -40,43 +40,45 @@ impl Iterator for Lexer<'_> {
     // TODO: refactor use of clone for peekable
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(next) = self.get_next_non_whitespace_char() {
-            if next.is_alphanumeric() {
-                let mut alpha_token = String::with_capacity(30);
-                alpha_token.push(next);
-                let mut peekable = self.iter.clone().peekable();
-                loop {
-                    if let Some(next_peek) = peekable.peek() {
-                        if next_peek.is_alphanumeric() {
-                            self.iter.next();
-                            alpha_token.push(peekable.next()?);
-                        } else {
-                            break;
+            match next {
+                '=' => Some(Token::new(TokenType::Assign, next.to_string())),
+                '+' => Some(Token::new(TokenType::Plus, next.to_string())),
+                ';' => Some(Token::new(TokenType::Semicolon, next.to_string())),
+                ',' => Some(Token::new(TokenType::Comma, next.to_string())),
+                '{' => Some(Token::new(TokenType::Lbrace, next.to_string())),
+                '}' => Some(Token::new(TokenType::Rbrace, next.to_string())),
+                '(' => Some(Token::new(TokenType::Lparen, next.to_string())),
+                ')' => Some(Token::new(TokenType::Rparen, next.to_string())),
+                _ => {
+                    if next.is_alphanumeric() {
+                        let mut alpha_token = String::with_capacity(30);
+                        alpha_token.push(next);
+                        let mut peekable = self.iter.clone().peekable();
+                        loop {
+                            if let Some(next_peek) = peekable.peek() {
+                                if next_peek.is_alphanumeric() {
+                                    self.iter.next();
+                                    alpha_token.push(peekable.next()?);
+                                } else {
+                                    break;
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+                        match alpha_token.as_str() {
+                            "let" => Some(Token::new(TokenType::Let, alpha_token)),
+                            "fn" => Some(Token::new(TokenType::Function, alpha_token)),
+                            _ => {
+                                if let Ok(_) = alpha_token.parse::<i128>() {
+                                    return Some(Token::new(TokenType::Int, alpha_token));
+                                }
+                                return Some(Token::new(TokenType::Ident, alpha_token));
+                            }
                         }
                     } else {
-                        break;
+                        return Some(Token::new(TokenType::Illegal, next.to_string()));
                     }
-                }
-                match alpha_token.as_str() {
-                    "let" => Some(Token::new(TokenType::Let, alpha_token)),
-                    "fn" => Some(Token::new(TokenType::Function, alpha_token)),
-                    _ => {
-                        if let Ok(_) = alpha_token.parse::<i128>() {
-                            return Some(Token::new(TokenType::Int, alpha_token));
-                        }
-                        return Some(Token::new(TokenType::Ident, alpha_token));
-                    }
-                }
-            } else {
-                match next {
-                    '=' => Some(Token::new(TokenType::Assign, next.to_string())),
-                    '+' => Some(Token::new(TokenType::Plus, next.to_string())),
-                    ';' => Some(Token::new(TokenType::Semicolon, next.to_string())),
-                    ',' => Some(Token::new(TokenType::Comma, next.to_string())),
-                    '{' => Some(Token::new(TokenType::Lbrace, next.to_string())),
-                    '}' => Some(Token::new(TokenType::Rbrace, next.to_string())),
-                    '(' => Some(Token::new(TokenType::Lparen, next.to_string())),
-                    ')' => Some(Token::new(TokenType::Rparen, next.to_string())),
-                    _ => Some(Token::new(TokenType::Illegal, next.to_string())),
                 }
             }
         } else {
