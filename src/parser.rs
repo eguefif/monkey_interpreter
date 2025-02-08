@@ -3,9 +3,9 @@ pub mod ast_traits;
 
 use crate::tokenizer::lexer::Lexer;
 use crate::tokenizer::Token;
-
-pub struct Parser<'a> {
-    lexer: 'a Lexer,
+/*
+pub struct Parser {
+    lexer: Lexer,
     curToken: Option<Token>,
     nextToken: Option<Token>,
 }
@@ -23,3 +23,4 @@ impl Parser<'_> {
         todo!()
     }
 }
+*/

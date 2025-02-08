@@ -10,7 +10,7 @@ pub struct Lexer<'a> {
 impl<'a> Lexer<'a> {
     pub fn new(content: &'a String) -> Self {
         Self {
-            iter: content.chars().clone().peekable(),
+            iter: content.chars().peekable(),
         }
     }
 
