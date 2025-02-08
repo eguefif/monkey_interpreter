@@ -1,31 +1,31 @@
-use crate::parser::ast_traits::Statement;
+use crate::parser::ast_traits::{Expression, Node, Statement};
 use crate::tokenizer::Token;
 
-struct Program {
-    statements: Vec<impl Statement>,
+struct Program<T: Statement> {
+    statements: Vec<T>,
 }
 
-impl Program{
-    pub fn new() -> Self{
+impl<T: Statement> Program<T> {
+    pub fn new() -> Self {
         Self {
             statements: Vec::with_capacity(200),
         }
     }
 }
-
-struct<T: Node, Statement> LetStatement<T> {
+/*
+struct LetStatement<T: None, LetStatement> {
     token: Token,
     identifier: Identifier,
     value: T,
 }
 
-impl Node for LetStatement{
-    fn token_litteral(&self) -> String{
+impl Node for LetStatement {
+    fn token_litteral(&self) -> String {
         self.token.litteral
     }
 }
 
-impl Statement for LetStatement{
+impl Statement<T> for LetStatement {
     fn statement_node(&self) {}
 }
 
@@ -33,3 +33,14 @@ struct Identifier {
     token: Token,
     value: String,
 }
+
+impl Node for Identifier {
+    fn token_litteral(&self) -> String {
+        self.value
+    }
+}
+
+impl Expression for Identifier {
+    fn expression_node(&self) {}
+}
+*/
