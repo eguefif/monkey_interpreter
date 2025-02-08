@@ -12,20 +12,19 @@ impl<T: Statement> Program<T> {
         }
     }
 }
-/*
-struct LetStatement<T: None, LetStatement> {
+struct LetStatement<T: Node> {
     token: Token,
     identifier: Identifier,
     value: T,
 }
 
-impl Node for LetStatement {
-    fn token_litteral(&self) -> String {
-        self.token.litteral
+impl<T: Node> Node for LetStatement<T> {
+    fn token_litteral(&self) -> &String {
+        &self.token.litteral
     }
 }
 
-impl Statement<T> for LetStatement {
+impl<T: Node> Statement for LetStatement<T> {
     fn statement_node(&self) {}
 }
 
@@ -35,12 +34,11 @@ struct Identifier {
 }
 
 impl Node for Identifier {
-    fn token_litteral(&self) -> String {
-        self.value
+    fn token_litteral(&self) -> &String {
+        &self.value
     }
 }
 
 impl Expression for Identifier {
     fn expression_node(&self) {}
 }
-*/
