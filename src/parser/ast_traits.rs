@@ -1,11 +1,11 @@
-trait Node {
+pub trait Node {
     fn token_litteral(&self) -> String;
 }
 
-trait Statement {
+pub trait Statement {
     fn statement_node(&self) -> String;
 }
 
-trait Expression {
+pub trait Expression {
     fn expression_node(&self) -> String;
 }
