@@ -8,7 +8,7 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(content: &'a String) -> Self {
+    pub fn new(content: &'a str) -> Self {
         Self {
             iter: content.chars().peekable(),
         }

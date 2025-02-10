@@ -9,6 +9,5 @@ pub fn interpret(filename: String) {
     let content = fs::read_to_string(filename).expect("Error: file does not exist");
     let lexer = Lexer::new(&content);
     let mut parser = Parser::new(lexer);
-    let ast = parser.make_ast();
-    println!("{ast}");
+    let ast = parser.parse_program();
 }

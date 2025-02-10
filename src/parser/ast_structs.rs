@@ -1,7 +1,7 @@
 use crate::parser::ast_traits::{Expression, Node, Statement};
 use crate::tokenizer::Token;
 
-struct Program<T: Statement> {
+pub struct Program<T: Statement> {
     statements: Vec<T>,
 }
 
@@ -12,7 +12,7 @@ impl<T: Statement> Program<T> {
         }
     }
 }
-struct LetStatement<T: Node> {
+pub struct LetStatement<T: Node> {
     token: Token,
     identifier: Identifier,
     value: T,
@@ -28,7 +28,7 @@ impl<T: Node> Statement for LetStatement<T> {
     fn statement_node(&self) {}
 }
 
-struct Identifier {
+pub struct Identifier {
     token: Token,
     value: String,
 }
