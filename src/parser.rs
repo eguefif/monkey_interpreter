@@ -1,36 +1,59 @@
 use crate::parser::ast_types::{Expression, Identifier, LetStatement, Program, Statement};
 use crate::tokenizer::lexer::Lexer;
-use crate::tokenizer::Token;
+use crate::tokenizer::{Token, TokenType};
 
 pub mod ast_types;
 
-pub fn parse_program(lexer: Lexer) -> Option<Program> {
-    let mut statements: Vec<Statement> = Vec::new();
-    for token in lexer {
-        if let Some(statement) = parse_statement(token) {
-            statements.push(statement);
-        } else {
-            break;
-        }
-    }
-    Some(Program {
-        statements: statements,
-    })
+pub struct Parser<'a> {
+    lexer: Lexer<'a>,
 }
 
-fn parse_statement(token: Token) -> Option<Statement> {
-    let s1 = LetStatement {
-        token: token.clone(),
-        identifier: Identifier {
-            token: token.clone(),
-            value: token.litteral.clone(),
-        },
-        value: Expression {
-            value: token.litteral.clone(),
-        },
-    };
-    let stm = Statement::Let(s1);
-    Some(stm)
+impl<'a> Parser<'a> {
+    pub fn new(lexer: Lexer<'a>) -> Self {
+        Self { lexer }
+    }
+
+    pub fn parse_program(&mut self) -> Option<Program> {
+        let mut statements: Vec<Statement> = Vec::new();
+        loop {
+            if let Some(token) = self.lexer.next() {
+                if let Some(statement) = self.parse_statement(token) {
+                    statements.push(statement);
+                }
+            } else {
+                break;
+            }
+        }
+        Some(Program {
+            statements: statements,
+        })
+    }
+
+    fn parse_statement(&mut self, token: Token) -> Option<Statement> {
+        match token.token_type {
+            TokenType::Let => Some(Statement::Let(self.parse_letstatement())),
+            _ => None,
+        }
+    }
+
+    fn parse_letstatement(&mut self) -> LetStatement {
+        LetStatement {
+            token: Token {
+                token_type: TokenType::Let,
+                litteral: "let".to_string(),
+            },
+            identifier: Identifier {
+                token: Token {
+                    token_type: TokenType::Ident,
+                    litteral: "a".to_string(),
+                },
+                value: "a".to_string(),
+            },
+            value: Expression {
+                value: "test".to_string(),
+            },
+        }
+    }
 }
 
 #[cfg(test)]
@@ -46,7 +69,8 @@ let y = 10;
 let foobar = 838383;
     ";
         let lexer = Lexer::new(&input);
-        let program: Program = parse_program(lexer).unwrap();
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
         assert_eq!(program.len(), 3);
 
         let expected_identifiers = ["x", "y", "foobar"];
