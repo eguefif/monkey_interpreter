@@ -1,3 +1,4 @@
+#![allow(unused_variables)]
 use crate::parser::Parser;
 use crate::tokenizer::lexer::Lexer;
 use std::fs;

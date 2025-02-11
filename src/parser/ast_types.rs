@@ -40,5 +40,10 @@ pub struct Expression {
 
 pub struct Identifier {
     pub token: Token,
-    pub value: String,
+}
+
+impl Identifier {
+    pub fn get_value(&self) -> &str {
+        self.token.litteral.as_str()
+    }
 }

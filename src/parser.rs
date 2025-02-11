@@ -31,26 +31,37 @@ impl<'a> Parser<'a> {
 
     fn parse_statement(&mut self, token: Token) -> Option<Statement> {
         match token.token_type {
-            TokenType::Let => Some(Statement::Let(self.parse_letstatement())),
+            TokenType::Let => Some(Statement::Let(self.parse_letstatement(token))),
             _ => None,
         }
     }
 
-    fn parse_letstatement(&mut self) -> LetStatement {
-        let ident = self.lexer.next().unwrap();
-        let _ = self.lexer.next().unwrap();
-        let value = self.lexer.next().unwrap();
+    fn parse_letstatement(&mut self, token: Token) -> LetStatement {
+        let ident = self
+            .lexer
+            .next()
+            .expect("Error: end of file before end of let statement");
+        let assign = self
+            .lexer
+            .next()
+            .expect("Error: end of file before end of let statement");
+        if assign.token_type != TokenType::Assign {
+            panic!("Error: let statement does not have =");
+        }
+        let value = self
+            .lexer
+            .next()
+            .expect("Error: end of file before end of let statement");
+        while let Some(token) = self.lexer.next() {
+            if token.token_type == TokenType::Semicolon {
+                break;
+            }
+        }
         LetStatement {
-            token: Token {
-                token_type: TokenType::Let,
-                litteral: "Let".to_string(),
-            },
-            identifier: Identifier {
-                value: ident.litteral.clone(),
-                token: ident,
-            },
+            token: token,
+            identifier: Identifier { token: ident },
             value: Expression {
-                value: value.litteral,
+                value: "mock".to_string(),
             },
         }
     }
@@ -81,7 +92,7 @@ let foobar = 838383;
 
     fn check_let_statement(smt: &Statement, identifiers: &str) -> bool {
         if let Let(smt) = smt {
-            if smt.identifier.value.as_str() == identifiers {
+            if smt.identifier.get_value() == identifiers {
                 return true;
             }
         }
