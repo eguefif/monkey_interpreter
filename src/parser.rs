@@ -1,34 +1,36 @@
 use crate::parser::ast_types::{Expression, Identifier, LetStatement, Program, Statement};
 use crate::tokenizer::lexer::Lexer;
+use crate::tokenizer::Token;
 
 pub mod ast_types;
 
-pub struct Parser<'a> {
-    lexer: Lexer<'a>,
+pub fn parse_program(lexer: Lexer) -> Option<Program> {
+    let mut statements: Vec<Statement> = Vec::new();
+    for token in lexer {
+        if let Some(statement) = parse_statement(token) {
+            statements.push(statement);
+        } else {
+            break;
+        }
+    }
+    Some(Program {
+        statements: statements,
+    })
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(lexer: Lexer<'a>) -> Self {
-        Self { lexer }
-    }
-
-    pub fn parse_program(&mut self) -> Option<Program> {
-        let token = self.lexer.next().unwrap();
-        let s1 = LetStatement {
+fn parse_statement(token: Token) -> Option<Statement> {
+    let s1 = LetStatement {
+        token: token.clone(),
+        identifier: Identifier {
             token: token.clone(),
-            identifier: Identifier {
-                token: token.clone(),
-                value: token.litteral.clone(),
-            },
-            value: Expression {
-                value: token.litteral.clone(),
-            },
-        };
-        let mut v: Vec<Statement> = Vec::new();
-        let stm = Statement::Let(s1);
-        v.push(stm);
-        Some(Program { statements: v })
-    }
+            value: token.litteral.clone(),
+        },
+        value: Expression {
+            value: token.litteral.clone(),
+        },
+    };
+    let stm = Statement::Let(s1);
+    Some(stm)
 }
 
 #[cfg(test)]
@@ -44,8 +46,7 @@ let y = 10;
 let foobar = 838383;
     ";
         let lexer = Lexer::new(&input);
-        let mut parser = Parser::new(lexer);
-        let program: Program = parser.parse_program().unwrap();
+        let program: Program = parse_program(lexer).unwrap();
         assert_eq!(program.len(), 3);
 
         let expected_identifiers = ["x", "y", "foobar"];
