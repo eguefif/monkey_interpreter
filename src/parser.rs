@@ -70,7 +70,10 @@ impl<'a> Parser<'a> {
         if next.token_type == token_type {
             return true;
         }
-        return false;
+        panic!(
+            "Error: expect {:?} but got {:?}",
+            next.token_type, token_type
+        );
     }
 }
 
