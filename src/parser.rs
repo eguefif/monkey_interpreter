@@ -37,20 +37,20 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_letstatement(&mut self) -> LetStatement {
+        let ident = self.lexer.next().unwrap();
+        let _ = self.lexer.next().unwrap();
+        let value = self.lexer.next().unwrap();
         LetStatement {
             token: Token {
                 token_type: TokenType::Let,
-                litteral: "let".to_string(),
+                litteral: "Let".to_string(),
             },
             identifier: Identifier {
-                token: Token {
-                    token_type: TokenType::Ident,
-                    litteral: "a".to_string(),
-                },
-                value: "a".to_string(),
+                value: ident.litteral.clone(),
+                token: ident,
             },
             value: Expression {
-                value: "test".to_string(),
+                value: value.litteral,
             },
         }
     }
