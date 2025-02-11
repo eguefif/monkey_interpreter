@@ -41,11 +41,7 @@ impl<'a> Parser<'a> {
             .lexer
             .next()
             .expect("Error: end of file before end of let statement");
-        let assign = self
-            .lexer
-            .next()
-            .expect("Error: end of file before end of let statement");
-        if assign.token_type != TokenType::Assign {
+        if !self.expect_token(TokenType::Assign) {
             panic!("Error: let statement does not have =");
         }
         let value = self
@@ -64,6 +60,17 @@ impl<'a> Parser<'a> {
                 value: "mock".to_string(),
             },
         }
+    }
+
+    fn expect_token(&mut self, token_type: TokenType) -> bool {
+        let next = self
+            .lexer
+            .next()
+            .expect("Error: reach the EOF. Should have a token");
+        if next.token_type == token_type {
+            return true;
+        }
+        return false;
     }
 }
 
