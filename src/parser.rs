@@ -108,4 +108,14 @@ let foobar = 838383;
         }
         false
     }
+
+    #[test]
+    #[should_panic]
+    fn it_should_panic_with_error_expect_token() {
+        let input = "let x 3 = 5;
+    ";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+    }
 }
