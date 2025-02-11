@@ -1,4 +1,6 @@
-use crate::parser::ast_types::{Expression, Identifier, LetStatement, Program, Statement};
+use crate::parser::ast_types::{
+    Expression, Identifier, LetStatement, Program, ReturnStatement, Statement,
+};
 use crate::tokenizer::lexer::Lexer;
 use crate::tokenizer::{Token, TokenType};
 
@@ -32,6 +34,7 @@ impl<'a> Parser<'a> {
     fn parse_statement(&mut self, token: Token) -> Option<Statement> {
         match token.token_type {
             TokenType::Let => Some(Statement::Let(self.parse_letstatement(token))),
+            TokenType::Return => Some(Statement::Return(self.parse_returnstatement(token))),
             _ => None,
         }
     }
@@ -44,10 +47,6 @@ impl<'a> Parser<'a> {
         if !self.expect_token(TokenType::Assign) {
             panic!("Error: let statement does not have =");
         }
-        let value = self
-            .lexer
-            .next()
-            .expect("Error: end of file before end of let statement");
         while let Some(token) = self.lexer.next() {
             if token.token_type == TokenType::Semicolon {
                 break;
@@ -57,6 +56,20 @@ impl<'a> Parser<'a> {
             token: token,
             identifier: Identifier { token: ident },
             value: Expression {
+                value: "mock".to_string(),
+            },
+        }
+    }
+
+    fn parse_returnstatement(&mut self, token: Token) -> ReturnStatement {
+        while let Some(token) = self.lexer.next() {
+            if token.token_type == TokenType::Semicolon {
+                break;
+            }
+        }
+        ReturnStatement {
+            token: token,
+            return_value: Expression {
                 value: "mock".to_string(),
             },
         }
@@ -80,7 +93,7 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::ast_types::Statement::Let;
+    use crate::parser::ast_types::Statement::{Let, Return};
     use crate::tokenizer::lexer::Lexer;
 
     #[test]
@@ -107,6 +120,26 @@ let foobar = 838383;
             }
         }
         false
+    }
+
+    #[test]
+    fn it_should_parse_return_statement() {
+        let input = "return 5;
+return 10;
+return add(5, 1);
+;
+    ";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        assert_eq!(program.len(), 3);
+        for (i, stmt) in program.statements.iter().enumerate() {
+            if let Return(stmt) = stmt {
+                assert_eq!(stmt.token.token_type, TokenType::Return)
+            } else {
+                panic!("Failed: statement is None")
+            }
+        }
     }
 
     #[test]

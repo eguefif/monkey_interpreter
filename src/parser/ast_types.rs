@@ -6,9 +6,10 @@ pub enum Node {
     Expression(Expression),
 }
 
+#[derive(Debug)]
 pub enum Statement {
     Let(LetStatement),
-    Return,
+    Return(ReturnStatement),
     Expr,
 }
 
@@ -28,16 +29,25 @@ impl Program {
     }
 }
 
+#[derive(Debug)]
 pub struct LetStatement {
     pub token: Token,
     pub identifier: Identifier,
     pub value: Expression,
 }
 
+#[derive(Debug)]
+pub struct ReturnStatement {
+    pub token: Token,
+    pub return_value: Expression,
+}
+
+#[derive(Debug)]
 pub struct Expression {
     pub value: String,
 }
 
+#[derive(Debug)]
 pub struct Identifier {
     pub token: Token,
 }
