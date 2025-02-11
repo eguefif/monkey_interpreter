@@ -10,7 +10,7 @@ pub enum Node {
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
-    Expr,
+    Expr(ExpressionStatement),
 }
 
 pub struct Program {
@@ -43,11 +43,6 @@ pub struct ReturnStatement {
 }
 
 #[derive(Debug)]
-pub struct Expression {
-    pub value: String,
-}
-
-#[derive(Debug)]
 pub struct Identifier {
     pub token: Token,
 }
@@ -56,4 +51,15 @@ impl Identifier {
     pub fn get_value(&self) -> &str {
         self.token.litteral.as_str()
     }
+}
+
+#[derive(Debug)]
+pub struct ExpressionStatement {
+    pub token: Token,
+    pub expression: Expression,
+}
+
+#[derive(Debug)]
+pub struct Expression {
+    pub value: String,
 }
