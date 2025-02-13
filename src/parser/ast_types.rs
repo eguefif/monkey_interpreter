@@ -10,7 +10,7 @@ pub enum Precedence {
     Sum,
     Product,
     Prefix,
-    Call
+    Call,
 }
 
 pub enum Node {
@@ -74,6 +74,5 @@ pub struct ExpressionStatement {
 
 #[derive(Debug)]
 pub struct Expression {
-    pub type: ExpressionType,
     pub value: String,
 }
