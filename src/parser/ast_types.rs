@@ -1,5 +1,18 @@
 use crate::tokenizer::Token;
 
+// TODO: add format display functions to transform everyting into a string we can just compare in
+// tests
+
+pub enum Precedence {
+    Lowest,
+    Equals,
+    Lessgreater,
+    Sum,
+    Product,
+    Prefix,
+    Call
+}
+
 pub enum Node {
     Program(Program),
     Statement(Statement),
@@ -10,7 +23,7 @@ pub enum Node {
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
-    Expr(ExpressionStatement),
+    Expression(ExpressionStatement),
 }
 
 pub struct Program {
@@ -61,5 +74,6 @@ pub struct ExpressionStatement {
 
 #[derive(Debug)]
 pub struct Expression {
+    pub type: ExpressionType,
     pub value: String,
 }

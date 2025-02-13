@@ -1,5 +1,6 @@
 use crate::parser::ast_types::{
-    Expression, Identifier, LetStatement, Program, ReturnStatement, Statement,
+    Expression, ExpressionStatement, Identifier, LetStatement, Precedence, Program,
+    ReturnStatement, Statement,
 };
 use crate::tokenizer::lexer::Lexer;
 use crate::tokenizer::{Token, TokenType};
@@ -33,13 +34,15 @@ impl<'a> Parser<'a> {
 
     fn parse_statement(&mut self, token: Token) -> Option<Statement> {
         match token.token_type {
-            TokenType::Let => Some(Statement::Let(self.parse_letstatement(token))),
-            TokenType::Return => Some(Statement::Return(self.parse_returnstatement(token))),
-            _ => None,
+            TokenType::Let => Some(Statement::Let(self.parse_let_statement(token))),
+            TokenType::Return => Some(Statement::Return(self.parse_return_statement(token))),
+            _ => Some(Statement::Expression(
+                self.parse_expression_statement(token),
+            )),
         }
     }
 
-    fn parse_letstatement(&mut self, token: Token) -> LetStatement {
+    fn parse_let_statement(&mut self, token: Token) -> LetStatement {
         let ident = self
             .lexer
             .next()
@@ -61,7 +64,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_returnstatement(&mut self, token: Token) -> ReturnStatement {
+    fn parse_return_statement(&mut self, token: Token) -> ReturnStatement {
         while let Some(token) = self.lexer.next() {
             if token.token_type == TokenType::Semicolon {
                 break;
@@ -87,6 +90,19 @@ impl<'a> Parser<'a> {
             "Error: expect {:?} but got {:?}",
             next.token_type, token_type
         );
+    }
+
+    fn parse_expression_statement(&mut self, token: Token) -> ExpressionStatement {
+        let expression = self.parse_expression(Precedence::Lowest);
+
+        if self.expect_token(TokenType::Semicolon) {
+            self.lexer.next();
+        }
+        return ExpressionStatement { token, expression };
+    }
+
+    fn parse_expression(&mut self, precedence: Precedence) -> Expression {
+        todo!();
     }
 }
 
