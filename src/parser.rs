@@ -56,11 +56,15 @@ impl<'a> Parser<'a> {
             }
         }
         LetStatement {
-            token: token,
-            identifier: Identifier { token: ident },
-            value: Expression {
-                value: "mock".to_string(),
+            token: token.clone(),
+            identifier: Identifier {
+                value: ident.litteral.clone(),
+                token: ident,
             },
+            value: Expression::Identifier(Identifier {
+                value: token.litteral.clone(),
+                token: token,
+            }),
         }
     }
 
@@ -71,10 +75,11 @@ impl<'a> Parser<'a> {
             }
         }
         ReturnStatement {
-            token: token,
-            return_value: Expression {
-                value: "mock".to_string(),
-            },
+            token: token.clone(),
+            return_value: Expression::Identifier(Identifier {
+                value: token.litteral.clone(),
+                token: token,
+            }),
         }
     }
 
@@ -93,7 +98,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression_statement(&mut self, token: Token) -> ExpressionStatement {
-        let expression = self.parse_expression(Precedence::Lowest);
+        let expression = self.parse_expression(token.clone(), Precedence::Lowest);
 
         if let Some(next_token) = self.lexer.peek() {
             if next_token.token_type == TokenType::Semicolon {
@@ -103,10 +108,18 @@ impl<'a> Parser<'a> {
         return ExpressionStatement { token, expression };
     }
 
-    fn parse_expression(&mut self, precedence: Precedence) -> Expression {
-        Expression {
-            value: "mock".to_string(),
+    fn parse_expression(&mut self, token: Token, precedence: Precedence) -> Expression {
+        match token.token_type {
+            TokenType::Ident => self.parse_identifier(token),
+            _ => todo!(),
         }
+    }
+
+    fn parse_identifier(&mut self, token: Token) -> Expression {
+        Expression::Identifier(Identifier {
+            value: token.litteral.clone(),
+            token: token,
+        })
     }
 }
 
