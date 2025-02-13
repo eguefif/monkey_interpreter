@@ -30,6 +30,7 @@ pub enum Statement {
 #[derive(Debug)]
 pub enum Expression {
     Identifier(Identifier),
+    None,
 }
 
 pub struct Program {

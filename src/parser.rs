@@ -160,7 +160,6 @@ let foobar = 838383;
         let input = "return 5;
 return 10;
 return add(5, 1);
-;
     ";
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
@@ -193,10 +192,14 @@ return add(5, 1);
         let program: Program = parser.parse_program().unwrap();
 
         assert_eq!(program.len(), 1);
-        let smt = &program.statements[0];
-        match smt {
-            Statement::Expression(_) => {}
-            _ => panic!("Not a statement expression"),
+        if let Statement::Expression(exp) = &program.statements[0] {
+            if let Expression::Identifier(ident) = &exp.expression {
+                assert_eq!(ident.value, "foobar");
+            } else {
+                panic!("not an identifier");
+            }
+        } else {
+            panic!("Not a statement expression");
         }
     }
 }
