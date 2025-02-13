@@ -3,6 +3,7 @@ use crate::tokenizer::Token;
 // TODO: add format display functions to transform everyting into a string we can just compare in
 // tests
 
+#[derive(PartialEq, PartialOrd)]
 pub enum Precedence {
     Lowest,
     Equals,
@@ -24,6 +25,11 @@ pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
     Expression(ExpressionStatement),
+}
+
+#[derive(Debug)]
+pub enum Expression {
+    Identifier(Identifier),
 }
 
 pub struct Program {
@@ -58,6 +64,7 @@ pub struct ReturnStatement {
 #[derive(Debug)]
 pub struct Identifier {
     pub token: Token,
+    pub value: String,
 }
 
 impl Identifier {
@@ -70,9 +77,4 @@ impl Identifier {
 pub struct ExpressionStatement {
     pub token: Token,
     pub expression: Expression,
-}
-
-#[derive(Debug)]
-pub struct Expression {
-    pub value: String,
 }
