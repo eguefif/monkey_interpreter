@@ -151,4 +151,19 @@ return add(5, 1);
         let mut parser = Parser::new(lexer);
         let program: Program = parser.parse_program().unwrap();
     }
+
+    #[test]
+    fn it_should_parse_expression() {
+        let input = "foobar;";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        assert_eq!(program.len(), 1);
+        let smt = &program.statements[0];
+        match smt {
+            Statement::Expression(_) => {}
+            _ => panic!("Not a statement expression"),
+        }
+    }
 }
