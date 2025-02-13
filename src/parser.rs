@@ -95,14 +95,18 @@ impl<'a> Parser<'a> {
     fn parse_expression_statement(&mut self, token: Token) -> ExpressionStatement {
         let expression = self.parse_expression(Precedence::Lowest);
 
-        if self.expect_token(TokenType::Semicolon) {
-            self.lexer.next();
+        if let Some(next_token) = self.lexer.peek() {
+            if next_token.token_type == TokenType::Semicolon {
+                self.lexer.next();
+            }
         }
         return ExpressionStatement { token, expression };
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Expression {
-        todo!();
+        Expression {
+            value: "mock".to_string(),
+        }
     }
 }
 
