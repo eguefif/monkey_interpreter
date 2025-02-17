@@ -1,4 +1,4 @@
-use ast_types::Integer;
+use ast_types::{Integer, PrefixExpression, PrefixType};
 
 use crate::parser::ast_types::{
     Expression, ExpressionStatement, Identifier, LetStatement, Precedence, Program,
@@ -111,9 +111,12 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, token: Token, precedence: Precedence) -> Expression {
+        println!("token in parse_expression: {:?}", token);
         match token.token_type {
             TokenType::Ident => self.parse_identifier(token),
             TokenType::Int(value) => self.parse_number(token, value),
+            TokenType::Bang => self.parse_bang(token),
+            TokenType::Minus => self.parse_minus(token),
             _ => todo!(),
         }
     }
@@ -127,11 +130,42 @@ impl<'a> Parser<'a> {
     fn parse_number(&mut self, token: Token, value: i128) -> Expression {
         Expression::Int(Integer { value, token })
     }
+
+    fn parse_bang(&mut self, token: Token) -> Expression {
+        Expression::PrefixOp(PrefixExpression {
+            token: token,
+            prefix_type: PrefixType::Bang,
+            right: {
+                if let Some(token) = self.lexer.next() {
+                    println!("token: {:?}", token);
+                    Box::new(self.parse_expression(token, Precedence::Lowest))
+                } else {
+                    panic!("Prefix operator has no right expression")
+                }
+            },
+        })
+    }
+
+    fn parse_minus(&mut self, token: Token) -> Expression {
+        Expression::PrefixOp(PrefixExpression {
+            token: token,
+            prefix_type: PrefixType::Minus,
+            right: {
+                if let Some(token) = self.lexer.next() {
+                    println!("token: {:?}", token);
+                    Box::new(self.parse_expression(token, Precedence::Lowest))
+                } else {
+                    panic!("Prefix operator has no right expression")
+                }
+            },
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parser::ast_types::PrefixType;
     use crate::parser::ast_types::Statement::{Let, Return};
     use crate::tokenizer::lexer::Lexer;
 
@@ -221,6 +255,52 @@ return add(5, 1);
             if let Expression::Int(num) = &exp.expression {
                 assert_eq!(num.value, 5);
                 assert_eq!(num.token.litteral, "5")
+            } else {
+                panic!("not an identifier");
+            }
+        } else {
+            panic!("Not a statement expression");
+        }
+    }
+
+    #[test]
+    fn it_should_parse_expression_prefix_bang() {
+        let input = "!5";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        assert_eq!(program.len(), 1);
+        if let Statement::Expression(exp) = &program.statements[0] {
+            if let Expression::PrefixOp(op) = &exp.expression {
+                assert_eq!(op.token.litteral, "!");
+                assert_eq!(op.prefix_type, PrefixType::Bang);
+                if let Expression::Int(int) = &*op.right {
+                    assert_eq!(int.value, 5);
+                }
+            } else {
+                panic!("not an identifier");
+            }
+        } else {
+            panic!("Not a statement expression");
+        }
+    }
+
+    #[test]
+    fn it_should_parse_expression_prefix_sub() {
+        let input = "-15";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        assert_eq!(program.len(), 1);
+        if let Statement::Expression(exp) = &program.statements[0] {
+            if let Expression::PrefixOp(op) = &exp.expression {
+                assert_eq!(op.token.litteral, "-");
+                assert_eq!(op.prefix_type, PrefixType::Minus);
+                if let Expression::Int(int) = &*op.right {
+                    assert_eq!(int.value, 15);
+                }
             } else {
                 panic!("not an identifier");
             }

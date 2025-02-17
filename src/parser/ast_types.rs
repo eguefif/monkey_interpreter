@@ -27,10 +27,11 @@ pub enum Statement {
     Expression(ExpressionStatement),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Identifier(Identifier),
     Int(Integer),
+    PrefixOp(PrefixExpression),
     None,
 }
 
@@ -50,7 +51,7 @@ impl Program {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct LetStatement {
     pub token: Token,
     pub identifier: Identifier,
@@ -63,7 +64,7 @@ pub struct ReturnStatement {
     pub return_value: Expression,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Identifier {
     pub token: Token,
     pub value: String,
@@ -85,4 +86,17 @@ pub struct ExpressionStatement {
 pub struct Integer {
     pub token: Token,
     pub value: i128,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum PrefixType {
+    Minus,
+    Bang,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct PrefixExpression {
+    pub token: Token,
+    pub prefix_type: PrefixType,
+    pub right: Box<Expression>,
 }
