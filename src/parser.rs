@@ -138,7 +138,7 @@ impl<'a> Parser<'a> {
             right: {
                 if let Some(token) = self.lexer.next() {
                     println!("token: {:?}", token);
-                    Box::new(self.parse_expression(token, Precedence::Lowest))
+                    Box::new(self.parse_expression(token, Precedence::Prefix))
                 } else {
                     panic!("Prefix operator has no right expression")
                 }
@@ -153,7 +153,7 @@ impl<'a> Parser<'a> {
             right: {
                 if let Some(token) = self.lexer.next() {
                     println!("token: {:?}", token);
-                    Box::new(self.parse_expression(token, Precedence::Lowest))
+                    Box::new(self.parse_expression(token, Precedence::Prefix))
                 } else {
                     panic!("Prefix operator has no right expression")
                 }
@@ -165,8 +165,8 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::parser::ast_types::PrefixType;
     use crate::parser::ast_types::Statement::{Let, Return};
+    use crate::parser::ast_types::{InfixType, PrefixType};
     use crate::tokenizer::lexer::Lexer;
 
     #[test]
@@ -300,6 +300,66 @@ return add(5, 1);
                 assert_eq!(op.prefix_type, PrefixType::Minus);
                 if let Expression::Int(int) = &*op.right {
                     assert_eq!(int.value, 15);
+                }
+            } else {
+                panic!("not an identifier");
+            }
+        } else {
+            panic!("Not a statement expression");
+        }
+    }
+
+    #[test]
+    fn it_should_parse_expression_infix_add() {
+        let input = "3 + 15";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        assert_eq!(program.len(), 1);
+        if let Statement::Expression(exp) = &program.statements[0] {
+            if let Expression::InfixOp(op) = &exp.expression {
+                assert_eq!(op.token.litteral, "+");
+                assert_eq!(op.infix_type, InfixType::Add);
+                if let Expression::Int(int) = &*op.left {
+                    assert_eq!(int.value, 3);
+                } else {
+                    panic!("no left expression")
+                }
+                if let Expression::Int(int) = &*op.right {
+                    assert_eq!(int.value, 15);
+                } else {
+                    panic!("no right expression")
+                }
+            } else {
+                panic!("not an identifier");
+            }
+        } else {
+            panic!("Not a statement expression");
+        }
+    }
+
+    #[test]
+    fn it_should_parse_expression_infix_sub() {
+        let input = "3 - 15";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        assert_eq!(program.len(), 1);
+        if let Statement::Expression(exp) = &program.statements[0] {
+            if let Expression::InfixOp(op) = &exp.expression {
+                assert_eq!(op.token.litteral, "-");
+                assert_eq!(op.infix_type, InfixType::Sub);
+                if let Expression::Int(int) = &*op.left {
+                    assert_eq!(int.value, 3);
+                } else {
+                    panic!("no left expression")
+                }
+                if let Expression::Int(int) = &*op.right {
+                    assert_eq!(int.value, 15);
+                } else {
+                    panic!("no right expression")
                 }
             } else {
                 panic!("not an identifier");

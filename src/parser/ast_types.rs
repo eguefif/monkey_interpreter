@@ -32,6 +32,7 @@ pub enum Expression {
     Identifier(Identifier),
     Int(Integer),
     PrefixOp(PrefixExpression),
+    InfixOp(InfixExpression),
     None,
 }
 
@@ -98,5 +99,19 @@ pub enum PrefixType {
 pub struct PrefixExpression {
     pub token: Token,
     pub prefix_type: PrefixType,
+    pub right: Box<Expression>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum InfixType {
+    Add,
+    Sub,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct InfixExpression {
+    pub token: Token,
+    pub infix_type: InfixType,
+    pub left: Box<Expression>,
     pub right: Box<Expression>,
 }
