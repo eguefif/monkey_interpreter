@@ -30,6 +30,7 @@ pub enum Statement {
 #[derive(Debug)]
 pub enum Expression {
     Identifier(Identifier),
+    Int(Integer),
     None,
 }
 
@@ -78,4 +79,10 @@ impl Identifier {
 pub struct ExpressionStatement {
     pub token: Token,
     pub expression: Expression,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Integer {
+    pub token: Token,
+    pub value: i128,
 }

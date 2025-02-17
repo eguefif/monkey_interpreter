@@ -1,3 +1,5 @@
+use ast_types::Integer;
+
 use crate::parser::ast_types::{
     Expression, ExpressionStatement, Identifier, LetStatement, Precedence, Program,
     ReturnStatement, Statement,
@@ -111,6 +113,7 @@ impl<'a> Parser<'a> {
     fn parse_expression(&mut self, token: Token, precedence: Precedence) -> Expression {
         match token.token_type {
             TokenType::Ident => self.parse_identifier(token),
+            TokenType::Int(value) => self.parse_number(token, value),
             _ => todo!(),
         }
     }
@@ -120,6 +123,9 @@ impl<'a> Parser<'a> {
             value: token.litteral.clone(),
             token: token,
         })
+    }
+    fn parse_number(&mut self, token: Token, value: i128) -> Expression {
+        Expression::Int(Integer { value, token })
     }
 }
 
@@ -185,7 +191,7 @@ return add(5, 1);
     }
 
     #[test]
-    fn it_should_parse_expression() {
+    fn it_should_parse_expression_identifier() {
         let input = "foobar;";
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
@@ -195,6 +201,26 @@ return add(5, 1);
         if let Statement::Expression(exp) = &program.statements[0] {
             if let Expression::Identifier(ident) = &exp.expression {
                 assert_eq!(ident.value, "foobar");
+            } else {
+                panic!("not an identifier");
+            }
+        } else {
+            panic!("Not a statement expression");
+        }
+    }
+
+    #[test]
+    fn it_should_parse_expression_integer() {
+        let input = "5";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        assert_eq!(program.len(), 1);
+        if let Statement::Expression(exp) = &program.statements[0] {
+            if let Expression::Int(num) = &exp.expression {
+                assert_eq!(num.value, 5);
+                assert_eq!(num.token.litteral, "5")
             } else {
                 panic!("not an identifier");
             }
