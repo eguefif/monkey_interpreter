@@ -116,7 +116,7 @@ impl<'a> Parser<'a> {
             TokenType::Int(value) => self.parse_number(token, value),
             TokenType::Bang => self.parse_bang(token),
             TokenType::Minus => self.parse_minus(token),
-            _ => todo!(),
+            _ => todo!("not yet implement {:?}", token),
         };
         let mut left_expression = prefix;
         let mut i = 0;
@@ -124,11 +124,13 @@ impl<'a> Parser<'a> {
             if peek.token_type == TokenType::Semicolon
                 || precedence > get_precedence(&peek.token_type)
             {
+                if peek.token_type == TokenType::Semicolon {
+                    self.lexer.next();
+                }
                 break;
             }
             i += 1;
             let next_token = self.lexer.next().expect("Infix expression has no operator");
-            println!("{}: {:?}", i, next_token);
             let infix = self.parse_infix_expression(left_expression, next_token);
             left_expression = infix;
         }
@@ -583,5 +585,39 @@ return add(5, 1);
         } else {
             panic!("Not a statement expression");
         }
+    }
+
+    #[test]
+    fn it_should_parse_expression_infix_complex_expression() {
+        let input = "3 < 15;";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        println!("{}", program);
+        assert_eq!("(3 < 15)", format!("{}", program).trim());
+    }
+
+    #[test]
+    fn it_should_parse_expression_infix_complex_expressions_2() {
+        let input = "3 + 15 - 1;";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        println!("{}", program);
+        assert_eq!("(3 + (15 - 1))", format!("{}", program).trim());
+    }
+
+    #[test]
+    fn it_should_parse_expression_infix_complex_expressions() {
+        //let input = "a + b * c + d / e - f;";
+        let input = "a + b * c + d / e";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        println!("{}", program);
+        assert_eq!("((a + (b * c)) + (d / e))", format!("{}", program).trim());
     }
 }
