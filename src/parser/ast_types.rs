@@ -1,7 +1,7 @@
 use crate::tokenizer::{Token, TokenType};
 use std::fmt;
 
-#[derive(PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub enum Precedence {
     Lowest,
     Equals,
@@ -154,6 +154,13 @@ impl fmt::Display for Integer {
 pub enum PrefixType {
     Minus,
     Bang,
+    Add,
+    Mul,
+    Div,
+    Eq,
+    Noteq,
+    Gt,
+    Lt,
 }
 
 #[derive(Debug, PartialEq)]

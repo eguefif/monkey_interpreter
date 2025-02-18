@@ -107,7 +107,7 @@ impl<'a> Parser<'a> {
                 self.lexer.next();
             }
         }
-        return ExpressionStatement { token, expression };
+        ExpressionStatement { token, expression }
     }
 
     fn parse_expression(&mut self, token: Token, precedence: Precedence) -> Expression {
@@ -119,20 +119,18 @@ impl<'a> Parser<'a> {
             _ => todo!("not yet implement {:?}", token),
         };
         let mut left_expression = prefix;
-        let mut i = 0;
         while let Some(peek) = self.lexer.peek() {
-            if peek.token_type == TokenType::Semicolon
-                || precedence > get_precedence(&peek.token_type)
+            if peek.token_type != TokenType::Semicolon
+                && precedence < get_precedence(&peek.token_type)
             {
+                let next_token = self.lexer.next().expect("Infix expression has no operator");
+                left_expression = self.parse_infix_expression(left_expression, next_token);
+            } else {
                 if peek.token_type == TokenType::Semicolon {
                     self.lexer.next();
                 }
                 break;
             }
-            i += 1;
-            let next_token = self.lexer.next().expect("Infix expression has no operator");
-            let infix = self.parse_infix_expression(left_expression, next_token);
-            left_expression = infix;
         }
         left_expression
     }
@@ -176,11 +174,11 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_infix_expression(&mut self, left: Expression, token: Token) -> Expression {
-        let precedence = get_precedence(&token.token_type);
         let next_token = self
             .lexer
             .next()
             .expect("Infix expression has no right expression");
+        let precedence = get_precedence(&token.token_type);
         let right = self.parse_expression(next_token, precedence);
         Expression::InfixOp(InfixExpression::new(left, right, token))
     }
@@ -606,18 +604,31 @@ return add(5, 1);
         let program: Program = parser.parse_program().unwrap();
 
         println!("{}", program);
-        assert_eq!("(3 + (15 - 1))", format!("{}", program).trim());
+        assert_eq!("((3 + 15) - 1)", format!("{}", program).trim());
     }
 
     #[test]
     fn it_should_parse_expression_infix_complex_expressions() {
-        //let input = "a + b * c + d / e - f;";
-        let input = "a + b * c + d / e";
+        let input = "a + b * c + d / e - f;";
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program: Program = parser.parse_program().unwrap();
 
         println!("{}", program);
-        assert_eq!("((a + (b * c)) + (d / e))", format!("{}", program).trim());
+        assert_eq!(
+            "(((a + (b * c)) + (d / e)) - f)",
+            format!("{}", program).trim()
+        );
+    }
+
+    #[test]
+    fn it_should_parse_expression_infix_complex_expressions_additions() {
+        let input = "a + b + c;";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        println!("{}", program);
+        assert_eq!("((a + b) + c)", format!("{}", program).trim());
     }
 }

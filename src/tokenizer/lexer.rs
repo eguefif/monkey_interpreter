@@ -17,8 +17,12 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn peek(&mut self) -> Option<Token> {
-        self.peek = self.get_next_token();
-        self.peek.clone()
+        if self.peek.is_none() {
+            self.peek = self.get_next_token();
+            self.peek.clone()
+        } else {
+            self.peek.clone()
+        }
     }
 
     fn get_next_token(&mut self) -> Option<Token> {
