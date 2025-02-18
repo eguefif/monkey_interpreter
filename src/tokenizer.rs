@@ -8,18 +8,20 @@ pub enum TokenType {
     Int(i128),
 
     Assign,
+
+    Bang,
+
     Plus,
     Minus,
-    Bang,
     Asterisk,
     Slash,
-    Comma,
-    Semicolon,
     Lt,
     Gt,
     Equal,
     Noteq,
 
+    Comma,
+    Semicolon,
     Lparen,
     Rparen,
     Lbrace,

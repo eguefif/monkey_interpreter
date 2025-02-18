@@ -1,4 +1,4 @@
-use crate::tokenizer::Token;
+use crate::tokenizer::{Token, TokenType};
 
 // TODO: add format display functions to transform everyting into a string we can just compare in
 // tests
@@ -106,6 +106,13 @@ pub struct PrefixExpression {
 pub enum InfixType {
     Add,
     Sub,
+    Mul,
+    Div,
+    Gt,
+    Lt,
+    Eq,
+    Noteq,
+    None,
 }
 
 #[derive(Debug, PartialEq)]
@@ -114,4 +121,28 @@ pub struct InfixExpression {
     pub infix_type: InfixType,
     pub left: Box<Expression>,
     pub right: Box<Expression>,
+}
+
+impl InfixExpression {
+    pub fn new(left: Expression, right: Expression, token: Token) -> Self {
+        Self {
+            left: Box::new(left),
+            right: Box::new(right),
+            infix_type: get_infix_type(&token.token_type),
+            token,
+        }
+    }
+}
+fn get_infix_type(token: &TokenType) -> InfixType {
+    match token {
+        TokenType::Plus => InfixType::Add,
+        TokenType::Minus => InfixType::Sub,
+        TokenType::Equal => InfixType::Eq,
+        TokenType::Noteq => InfixType::Noteq,
+        TokenType::Lt => InfixType::Lt,
+        TokenType::Gt => InfixType::Gt,
+        TokenType::Asterisk => InfixType::Mul,
+        TokenType::Slash => InfixType::Div,
+        _ => InfixType::None,
+    }
 }
