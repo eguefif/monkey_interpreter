@@ -126,9 +126,6 @@ impl<'a> Parser<'a> {
                 let next_token = self.lexer.next().expect("Infix expression has no operator");
                 left_expression = self.parse_infix_expression(left_expression, next_token);
             } else {
-                if peek.token_type == TokenType::Semicolon {
-                    self.lexer.next();
-                }
                 break;
             }
         }
@@ -592,43 +589,38 @@ return add(5, 1);
         let mut parser = Parser::new(lexer);
         let program: Program = parser.parse_program().unwrap();
 
-        println!("{}", program);
         assert_eq!("(3 < 15)", format!("{}", program).trim());
     }
 
     #[test]
-    fn it_should_parse_expression_infix_complex_expressions_2() {
-        let input = "3 + 15 - 1;";
-        let lexer = Lexer::new(&input);
-        let mut parser = Parser::new(lexer);
-        let program: Program = parser.parse_program().unwrap();
-
-        println!("{}", program);
-        assert_eq!("((3 + 15) - 1)", format!("{}", program).trim());
-    }
-
-    #[test]
     fn it_should_parse_expression_infix_complex_expressions() {
-        let input = "a + b * c + d / e - f;";
-        let lexer = Lexer::new(&input);
-        let mut parser = Parser::new(lexer);
-        let program: Program = parser.parse_program().unwrap();
+        let inputs = [
+            ("-a * b", "((-a) * b)"),
+            ("!-a", "(!(-a))"),
+            ("a + b + c", "((a + b) + c)"),
+            ("a + b - c", "((a + b) - c)"),
+            ("a * b * c", "((a * b) * c)"),
+            ("a * b / c", "((a * b) / c)"),
+            ("a + b / c", "(a + (b / c))"),
+            ("a + b * c + d / e - f;", "(((a + (b * c)) + (d / e)) - f)"),
+            ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            ),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            ),
+        ];
+        for input in inputs {
+            let lexer = Lexer::new(input.0);
+            let mut parser = Parser::new(lexer);
+            let program: Program = parser.parse_program().unwrap();
 
-        println!("{}", program);
-        assert_eq!(
-            "(((a + (b * c)) + (d / e)) - f)",
-            format!("{}", program).trim()
-        );
-    }
-
-    #[test]
-    fn it_should_parse_expression_infix_complex_expressions_additions() {
-        let input = "a + b + c;";
-        let lexer = Lexer::new(&input);
-        let mut parser = Parser::new(lexer);
-        let program: Program = parser.parse_program().unwrap();
-
-        println!("{}", program);
-        assert_eq!("((a + b) + c)", format!("{}", program).trim());
+            assert_eq!(input.1, format!("{}", program).trim());
+        }
     }
 }

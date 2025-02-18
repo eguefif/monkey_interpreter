@@ -77,7 +77,7 @@ impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut statements_str = String::new();
         for statement in self.statements.iter() {
-            statements_str.push_str(&format!("{}\n", statement))
+            statements_str.push_str(&format!("{}", statement))
         }
         write!(f, "{}", statements_str)
     }
