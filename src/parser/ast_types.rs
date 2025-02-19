@@ -39,6 +39,7 @@ impl fmt::Display for Statement {
 pub enum Expression {
     Identifier(Identifier),
     Int(Integer),
+    Boolean(Bool),
     PrefixOp(PrefixExpression),
     InfixOp(InfixExpression),
     None,
@@ -51,6 +52,7 @@ impl fmt::Display for Expression {
             Expression::Int(value) => write!(f, "{}", value),
             Expression::PrefixOp(value) => write!(f, "{}", value),
             Expression::InfixOp(value) => write!(f, "{}", value),
+            Expression::Boolean(value) => write!(f, "{}", value),
             Expression::None => write!(f, ""),
         }
     }
@@ -229,5 +231,28 @@ fn get_infix_type(token: &TokenType) -> InfixType {
         TokenType::Asterisk => InfixType::Mul,
         TokenType::Slash => InfixType::Div,
         _ => InfixType::None,
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Bool {
+    pub token: Token,
+    pub value: bool,
+}
+
+impl fmt::Display for Bool {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl Bool {
+    pub fn new(token: Token) -> Self {
+        let value = match token.token_type {
+            TokenType::True => true,
+            TokenType::False => false,
+            _ => panic!("Bool can only be true or false"),
+        };
+        Self { value, token }
     }
 }

@@ -1,4 +1,4 @@
-use ast_types::{InfixExpression, Integer, PrefixExpression, PrefixType};
+use ast_types::{Bool, InfixExpression, Integer, PrefixExpression, PrefixType};
 
 use crate::parser::ast_types::{
     Expression, ExpressionStatement, Identifier, LetStatement, Precedence, Program,
@@ -52,22 +52,24 @@ impl<'a> Parser<'a> {
         if !self.expect_token(TokenType::Assign) {
             panic!("Error: let statement does not have =");
         }
-        while let Some(token) = self.lexer.next() {
-            if token.token_type == TokenType::Semicolon {
-                break;
+        let let_expression = if let Some(next_token) = self.lexer.next() {
+            LetStatement {
+                token: token.clone(),
+                identifier: Identifier {
+                    value: ident.litteral.clone(),
+                    token: ident,
+                },
+                value: self.parse_expression(next_token, Precedence::Lowest),
+            }
+        } else {
+            panic!("Missing right expression in let statement");
+        };
+        if let Some(next_token) = self.lexer.next() {
+            if next_token.token_type != TokenType::Semicolon {
+                panic!("Missing ; after let expression")
             }
         }
-        LetStatement {
-            token: token.clone(),
-            identifier: Identifier {
-                value: ident.litteral.clone(),
-                token: ident,
-            },
-            value: Expression::Identifier(Identifier {
-                value: token.litteral.clone(),
-                token: token,
-            }),
-        }
+        let_expression
     }
 
     fn parse_return_statement(&mut self, token: Token) -> ReturnStatement {
@@ -116,6 +118,7 @@ impl<'a> Parser<'a> {
             TokenType::Int(value) => self.parse_number(token, value),
             TokenType::Bang => self.parse_bang(token),
             TokenType::Minus => self.parse_minus(token),
+            TokenType::True | TokenType::False => self.parse_bool(token),
             _ => todo!("not yet implement {:?}", token),
         };
         let mut left_expression = prefix;
@@ -130,6 +133,10 @@ impl<'a> Parser<'a> {
             }
         }
         left_expression
+    }
+
+    fn parse_bool(&mut self, token: Token) -> Expression {
+        Expression::Boolean(Bool::new(token))
     }
 
     fn parse_identifier(&mut self, token: Token) -> Expression {
@@ -621,6 +628,44 @@ return add(5, 1);
             let program: Program = parser.parse_program().unwrap();
 
             assert_eq!(input.1, format!("{}", program).trim());
+        }
+    }
+
+    #[test]
+    fn it_should_parse_expression_boolean() {
+        let input = "true;";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        let stmt = &program.statements[0];
+        if let Statement::Expression(exp) = stmt {
+            if let Expression::Boolean(value) = &exp.expression {
+                assert!(value.value);
+            } else {
+                panic!("Fail: not a boolean expression")
+            }
+        } else {
+            panic!("Fail: not a statement expression")
+        }
+    }
+
+    #[test]
+    fn it_should_parse_expression_boolean_in_a_let() {
+        let input = "let a = true;";
+        let lexer = Lexer::new(&input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+
+        let stmt = &program.statements[0];
+        if let Statement::Let(exp) = stmt {
+            if let Expression::Boolean(value) = &exp.value {
+                assert!(value.value);
+            } else {
+                panic!("Fail: not a boolean expression: {:?}", stmt)
+            }
+        } else {
+            panic!("Fail: not a statement expression")
         }
     }
 }
