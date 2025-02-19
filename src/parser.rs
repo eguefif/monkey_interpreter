@@ -687,4 +687,22 @@ return add(5, 1);
             assert_eq!(input.1, format!("{program}"));
         }
     }
+
+    #[test]
+    fn it_should_parse_group_expression() {
+        let inputs = [
+            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4"),
+            ("(5 + 5) * 2", "((5 + 5) * 2)"),
+            ("2 / (5 + 5)", "(2 / ( 5 + 5))"),
+            ("-(5 + 5)", "(-(5 + 5))"),
+            ("!(true == true)", "(!(true == true))"),
+        ];
+        for input in inputs {
+            let lexer = Lexer::new(input.0);
+            let mut parser = Parser::new(lexer);
+            let program: Program = parser.parse_program().unwrap();
+
+            assert_eq!(input.1, format!("{program}"));
+        }
+    }
 }
