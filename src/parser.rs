@@ -668,4 +668,23 @@ return add(5, 1);
             panic!("Fail: not a statement expression")
         }
     }
+
+    #[test]
+    fn it_should_parse_bool_in_expression() {
+        let inputs = [
+            ("true", "true"),
+            ("false", "false"),
+            ("false != true", "(false != true)"),
+            ("false == false", "(false == false)"),
+            ("3 > 5 == false", "((3 > 5) == false)"),
+            ("3 < 5 == true", "((3 < 5) == true)"),
+        ];
+        for input in inputs {
+            let lexer = Lexer::new(input.0);
+            let mut parser = Parser::new(lexer);
+            let program: Program = parser.parse_program().unwrap();
+
+            assert_eq!(input.1, format!("{program}"));
+        }
+    }
 }
