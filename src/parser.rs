@@ -119,6 +119,7 @@ impl<'a> Parser<'a> {
             TokenType::Bang => self.parse_bang(token),
             TokenType::Minus => self.parse_minus(token),
             TokenType::True | TokenType::False => self.parse_bool(token),
+            TokenType::Lparen => self.parse_group_expression(token),
             _ => todo!("not yet implement {:?}", token),
         };
         let mut left_expression = prefix;
@@ -133,6 +134,24 @@ impl<'a> Parser<'a> {
             }
         }
         left_expression
+    }
+
+    fn parse_group_expression(&mut self, token: Token) -> Expression {
+        let next_token = self
+            .lexer
+            .next()
+            .expect("Error: parenthesis group has no member");
+        let exp = self.parse_expression(next_token, Precedence::Lowest);
+        let peek = self
+            .lexer
+            .peek()
+            .expect("Error: a left parenthesis need to be close with a right one");
+        if peek.token_type == TokenType::Rparen {
+            self.lexer.next();
+            exp
+        } else {
+            panic!("Error: a left parenthesis need to be close with a right one");
+        }
     }
 
     fn parse_bool(&mut self, token: Token) -> Expression {
@@ -691,9 +710,9 @@ return add(5, 1);
     #[test]
     fn it_should_parse_group_expression() {
         let inputs = [
-            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4"),
+            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
             ("(5 + 5) * 2", "((5 + 5) * 2)"),
-            ("2 / (5 + 5)", "(2 / ( 5 + 5))"),
+            ("2 / (5 + 5)", "(2 / (5 + 5))"),
             ("-(5 + 5)", "(-(5 + 5))"),
             ("!(true == true)", "(!(true == true))"),
         ];
