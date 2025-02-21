@@ -1,5 +1,6 @@
 use ast_types::{
-    BlockStatement, Bool, IfExpression, InfixExpression, Integer, PrefixExpression, PrefixType,
+    BlockStatement, Bool, FunctionExpression, IfExpression, InfixExpression, Integer,
+    PrefixExpression, PrefixType,
 };
 
 use crate::parser::ast_types::{
@@ -98,8 +99,8 @@ impl<'a> Parser<'a> {
             return true;
         }
         panic!(
-            "Error: expect {:?} but got {:?}",
-            next.token_type, token_type
+            "Error: expect {:?} but got {:?}: {:?}",
+            token_type, next.token_type, next,
         );
     }
 
@@ -124,6 +125,7 @@ impl<'a> Parser<'a> {
             TokenType::True | TokenType::False => self.parse_bool(token),
             TokenType::Lparen => self.parse_group_expression(token),
             TokenType::If => self.parse_if_expression(token),
+            TokenType::Function => self.parse_function(token),
             _ => todo!("not yet implement {:?}", token),
         };
         let mut left_expression = prefix;
@@ -138,6 +140,40 @@ impl<'a> Parser<'a> {
             }
         }
         left_expression
+    }
+
+    fn parse_function(&mut self, token: Token) -> Expression {
+        let ident = self.lexer.next().expect("Expect a function identifier");
+        let params = self.parse_function_params();
+        self.expect_token(TokenType::Lbrace);
+        let block = self.parse_block_statement();
+        Expression::Function(FunctionExpression {
+            token: ident,
+            params,
+            block,
+        })
+    }
+
+    fn parse_function_params(&mut self) -> Vec<Identifier> {
+        let mut retval: Vec<Identifier> = Vec::new();
+        self.expect_token(TokenType::Lparen);
+        loop {
+            let token = self
+                .lexer
+                .next()
+                .expect("Unxpected end of file in function parameters");
+            match token.token_type {
+                TokenType::Rparen => break,
+                TokenType::Ident => retval.push(Identifier {
+                    value: token.litteral.clone(),
+                    token,
+                }),
+                TokenType::Comma => {}
+                _ => panic!("Unexpected token in function params: {:?}", token),
+            }
+        }
+
+        return retval;
     }
 
     fn parse_if_expression(&mut self, token: Token) -> Expression {
@@ -861,5 +897,25 @@ y;
         println!("{}", program);
         println!("{}", expected);
         assert_eq!(format!("{}", program), expected);
+    }
+
+    #[test]
+    fn it_should_parse_function() {
+        let input = "fn my_function(x, y) {
+            let retval = x + y;
+            retval;
+        }
+        ";
+        let expected = "fn my_function(x, y) {
+let retval = (x + y);
+retval;
+}
+";
+        println!("{input}");
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        println!("{program}");
+        assert_eq!(format!("{}", program), expected)
     }
 }

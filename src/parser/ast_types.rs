@@ -77,7 +77,7 @@ pub struct ReturnStatement {
 
 impl fmt::Display for ReturnStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "return {};\n", self.return_value)
+        write!(f, "return {};", self.return_value)
     }
 }
 
@@ -89,6 +89,7 @@ pub enum Expression {
     PrefixOp(PrefixExpression),
     InfixOp(InfixExpression),
     If(IfExpression),
+    Function(FunctionExpression),
     None,
 }
 
@@ -101,6 +102,7 @@ impl fmt::Display for Expression {
             Expression::InfixOp(value) => write!(f, "{}", value),
             Expression::Boolean(value) => write!(f, "{}", value),
             Expression::If(value) => write!(f, "{}", value),
+            Expression::Function(value) => write!(f, "{}", value),
             Expression::None => write!(f, ""),
         }
     }
@@ -134,6 +136,7 @@ impl fmt::Display for ExpressionStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.expression {
             Expression::If(value) => write!(f, "{}\n", value),
+            Expression::Function(value) => write!(f, "{}\n", value),
             _ => write!(f, "{};\n", self.expression),
         }
     }
@@ -304,5 +307,30 @@ impl fmt::Display for BlockStatement {
             block.push_str(&format!("{}", statement));
         }
         write!(f, "{}", block)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct FunctionExpression {
+    pub token: Token,
+    pub params: Vec<Identifier>,
+    pub block: BlockStatement,
+}
+
+impl fmt::Display for FunctionExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut params = String::new();
+        for (i, param) in self.params.iter().enumerate() {
+            if i == self.params.len() - 1 {
+                params.push_str(format!("{}", param.token.litteral).as_str());
+            } else {
+                params.push_str(format!("{}, ", param.token.litteral).as_str());
+            }
+        }
+        write!(
+            f,
+            "fn {}({}) {{\n{}\n}}",
+            self.token.litteral, params, self.block
+        )
     }
 }
