@@ -1,65 +1,6 @@
 use crate::tokenizer::{Token, TokenType};
 use std::fmt;
 
-#[derive(Debug, PartialEq, PartialOrd)]
-pub enum Precedence {
-    Lowest,
-    Equals,
-    Lessgreater,
-    Sum,
-    Product,
-    Prefix,
-    Call,
-}
-
-pub enum Node {
-    Program(Program),
-    Statement(Statement),
-    Expression(Expression),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Statement {
-    Let(LetStatement),
-    Return(ReturnStatement),
-    Expression(ExpressionStatement),
-}
-
-impl fmt::Display for Statement {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Statement::Let(_) => write!(f, ""),
-            Statement::Return(_) => write!(f, ""),
-            Statement::Expression(value) => write!(f, "{}", value),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Expression {
-    Identifier(Identifier),
-    Int(Integer),
-    Boolean(Bool),
-    PrefixOp(PrefixExpression),
-    InfixOp(InfixExpression),
-    If(IfExpression),
-    None,
-}
-
-impl fmt::Display for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Expression::Identifier(value) => write!(f, "{}", value),
-            Expression::Int(value) => write!(f, "{}", value),
-            Expression::PrefixOp(value) => write!(f, "{}", value),
-            Expression::InfixOp(value) => write!(f, "{}", value),
-            Expression::Boolean(value) => write!(f, "{}", value),
-            Expression::If(value) => write!(f, "{}", value),
-            Expression::None => write!(f, ""),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct Program {
     pub statements: Vec<Statement>,
@@ -87,6 +28,34 @@ impl fmt::Display for Program {
     }
 }
 
+#[derive(Debug, PartialEq, PartialOrd)]
+pub enum Precedence {
+    Lowest,
+    Equals,
+    Lessgreater,
+    Sum,
+    Product,
+    Prefix,
+    Call,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Statement {
+    Let(LetStatement),
+    Return(ReturnStatement),
+    Expression(ExpressionStatement),
+}
+
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Statement::Let(value) => write!(f, "{}", value),
+            Statement::Return(value) => write!(f, "{}", value),
+            Statement::Expression(value) => write!(f, "{}", value),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct LetStatement {
     pub token: Token,
@@ -96,7 +65,7 @@ pub struct LetStatement {
 
 impl fmt::Display for LetStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "let {} = {}", self.identifier, self.value)
+        write!(f, "let {} = {};\n", self.identifier, self.value)
     }
 }
 
@@ -108,7 +77,32 @@ pub struct ReturnStatement {
 
 impl fmt::Display for ReturnStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "return {}", self.return_value)
+        write!(f, "return {};\n", self.return_value)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Expression {
+    Identifier(Identifier),
+    Int(Integer),
+    Boolean(Bool),
+    PrefixOp(PrefixExpression),
+    InfixOp(InfixExpression),
+    If(IfExpression),
+    None,
+}
+
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Expression::Identifier(value) => write!(f, "{}", value),
+            Expression::Int(value) => write!(f, "{}", value),
+            Expression::PrefixOp(value) => write!(f, "{}", value),
+            Expression::InfixOp(value) => write!(f, "{}", value),
+            Expression::Boolean(value) => write!(f, "{}", value),
+            Expression::If(value) => write!(f, "{}", value),
+            Expression::None => write!(f, ""),
+        }
     }
 }
 
@@ -138,7 +132,10 @@ pub struct ExpressionStatement {
 
 impl fmt::Display for ExpressionStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.expression)
+        match &self.expression {
+            Expression::If(value) => write!(f, "{}\n", value),
+            _ => write!(f, "{};\n", self.expression),
+        }
     }
 }
 
@@ -272,11 +269,11 @@ impl fmt::Display for IfExpression {
         if let Some(alternative) = &self.alternative {
             write!(
                 f,
-                "if {}\n{{{}\n}} else {{\n{}\n}}",
+                "if {}\n{{\n{}}} else {{\n{}}}",
                 self.condition, self.consequence, alternative
             )
         } else {
-            write!(f, "if {}\n{{{}\n}}", self.condition, self.consequence)
+            write!(f, "if {}\n{{{}}}", self.condition, self.consequence)
         }
     }
 }

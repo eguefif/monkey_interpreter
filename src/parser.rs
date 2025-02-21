@@ -115,6 +115,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, token: Token, precedence: Precedence) -> Expression {
+        println!("Parse expression: {:?}", token);
         let prefix = match token.token_type {
             TokenType::Ident => self.parse_identifier(token),
             TokenType::Int(value) => self.parse_number(token, value),
@@ -666,35 +667,38 @@ return add(5, 1);
 
     #[test]
     fn it_should_parse_expression_infix_complex_expression() {
-        let input = "3 < 15;";
+        let input = "3 < 15";
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program: Program = parser.parse_program().unwrap();
 
-        assert_eq!("(3 < 15)", format!("{}", program).trim());
+        assert_eq!("(3 < 15);\n", format!("{}", program));
     }
 
     #[test]
     fn it_should_parse_expression_infix_complex_expressions() {
         let inputs = [
-            ("-a * b", "((-a) * b)"),
-            ("!-a", "(!(-a))"),
-            ("a + b + c", "((a + b) + c)"),
-            ("a + b - c", "((a + b) - c)"),
-            ("a * b * c", "((a * b) * c)"),
-            ("a * b / c", "((a * b) / c)"),
-            ("a + b / c", "(a + (b / c))"),
-            ("a + b * c + d / e - f;", "(((a + (b * c)) + (d / e)) - f)"),
-            ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
-            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
-            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+            ("-a * b", "((-a) * b);\n"),
+            ("!-a", "(!(-a));\n"),
+            ("a + b + c", "((a + b) + c);\n"),
+            ("a + b - c", "((a + b) - c);\n"),
+            ("a * b * c", "((a * b) * c);\n"),
+            ("a * b / c", "((a * b) / c);\n"),
+            ("a + b / c", "(a + (b / c));\n"),
+            (
+                "a + b * c + d / e - f;",
+                "(((a + (b * c)) + (d / e)) - f);\n",
+            ),
+            ("3 + 4; -5 * 5", "(3 + 4);\n((-5) * 5);\n"),
+            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4));\n"),
+            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4));\n"),
             (
                 "3 + 4 * 5 == 3 * 1 + 4 * 5",
-                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));\n",
             ),
             (
                 "3 + 4 * 5 == 3 * 1 + 4 * 5",
-                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));\n",
             ),
         ];
         for input in inputs {
@@ -702,7 +706,7 @@ return add(5, 1);
             let mut parser = Parser::new(lexer);
             let program: Program = parser.parse_program().unwrap();
 
-            assert_eq!(input.1, format!("{}", program).trim());
+            assert_eq!(input.1, format!("{}", program));
         }
     }
 
@@ -747,12 +751,12 @@ return add(5, 1);
     #[test]
     fn it_should_parse_bool_in_expression() {
         let inputs = [
-            ("true", "true"),
-            ("false", "false"),
-            ("false != true", "(false != true)"),
-            ("false == false", "(false == false)"),
-            ("3 > 5 == false", "((3 > 5) == false)"),
-            ("3 < 5 == true", "((3 < 5) == true)"),
+            ("true", "true;\n"),
+            ("false", "false;\n"),
+            ("false != true", "(false != true);\n"),
+            ("false == false", "(false == false);\n"),
+            ("3 > 5 == false", "((3 > 5) == false);\n"),
+            ("3 < 5 == true", "((3 < 5) == true);\n"),
         ];
         for input in inputs {
             let lexer = Lexer::new(input.0);
@@ -766,11 +770,11 @@ return add(5, 1);
     #[test]
     fn it_should_parse_group_expression() {
         let inputs = [
-            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
-            ("(5 + 5) * 2", "((5 + 5) * 2)"),
-            ("2 / (5 + 5)", "(2 / (5 + 5))"),
-            ("-(5 + 5)", "(-(5 + 5))"),
-            ("!(true == true)", "(!(true == true))"),
+            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4);\n"),
+            ("(5 + 5) * 2", "((5 + 5) * 2);\n"),
+            ("2 / (5 + 5)", "(2 / (5 + 5));\n"),
+            ("-(5 + 5)", "(-(5 + 5));\n"),
+            ("!(true == true)", "(!(true == true));\n"),
         ];
         for input in inputs {
             let lexer = Lexer::new(input.0);
@@ -796,7 +800,7 @@ return add(5, 1);
                 let condition = format!("{}", *if_stmt.condition);
                 assert_eq!(condition, "(x < y)");
                 let block = format!("{}", if_stmt.consequence);
-                assert_eq!(block, "x");
+                assert_eq!(block, "x;\n");
                 assert!(if_stmt.alternative.is_none())
             }
         } else {
@@ -819,13 +823,43 @@ return add(5, 1);
                 let condition = format!("{}", *if_stmt.condition);
                 assert_eq!(condition, "(x < y)");
                 let block = format!("{}", if_stmt.consequence);
-                assert_eq!(block, "x");
+                assert_eq!(block, "x;\n");
                 if let Some(alternative) = &if_stmt.alternative {
-                    assert_eq!("y", format!("{}", alternative));
+                    assert_eq!("y;\n", format!("{}", alternative));
                 }
             }
         } else {
             panic!("Not an expression")
         }
+    }
+
+    #[test]
+    fn it_shoul_parse_if_else_statement_complex() {
+        let input = "if (x < y) {
+let z = 5 + 2;
+x + 3 - 3 * 2;
+x;
+} else {
+y + 4;
+5 < 3;
+y
+}";
+        let expected = "if (x < y)
+{
+let z = (5 + 2);
+((x + 3) - (3 * 2));
+x;
+} else {
+(y + 4);
+(5 < 3);
+y;
+}
+";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        println!("{}", program);
+        println!("{}", expected);
+        assert_eq!(format!("{}", program), expected);
     }
 }
