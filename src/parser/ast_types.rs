@@ -18,7 +18,7 @@ pub enum Node {
     Expression(Expression),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
@@ -42,6 +42,7 @@ pub enum Expression {
     Boolean(Bool),
     PrefixOp(PrefixExpression),
     InfixOp(InfixExpression),
+    If(IfExpression),
     None,
 }
 
@@ -53,6 +54,7 @@ impl fmt::Display for Expression {
             Expression::PrefixOp(value) => write!(f, "{}", value),
             Expression::InfixOp(value) => write!(f, "{}", value),
             Expression::Boolean(value) => write!(f, "{}", value),
+            Expression::If(value) => write!(f, "{}", value),
             Expression::None => write!(f, ""),
         }
     }
@@ -98,7 +100,7 @@ impl fmt::Display for LetStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ReturnStatement {
     pub token: Token,
     pub return_value: Expression,
@@ -128,7 +130,7 @@ impl Identifier {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ExpressionStatement {
     pub token: Token,
     pub expression: Expression,
@@ -254,5 +256,56 @@ impl Bool {
             _ => panic!("Bool can only be true or false"),
         };
         Self { value, token }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct IfExpression {
+    pub token: Token,
+    pub condition: Box<Expression>,
+    pub consequence: BlockStatement,
+    pub alternative: Option<BlockStatement>,
+}
+
+impl fmt::Display for IfExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(alternative) = &self.alternative {
+            write!(
+                f,
+                "if {}\n{{{}\n}} else {{\n{}\n}}",
+                self.condition, self.consequence, alternative
+            )
+        } else {
+            write!(f, "if {}\n{{{}\n}}", self.condition, self.consequence)
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct BlockStatement {
+    pub statements: Vec<Statement>,
+}
+
+impl PartialEq for BlockStatement {
+    fn eq(&self, other: &Self) -> bool {
+        if self.statements.len() != other.statements.len() {
+            return false;
+        }
+        for (i, s) in self.statements.iter().enumerate() {
+            if *s != other.statements[i] {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
+impl fmt::Display for BlockStatement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut block = String::new();
+        for statement in self.statements.iter() {
+            block.push_str(&format!("{}", statement));
+        }
+        write!(f, "{}", block)
     }
 }

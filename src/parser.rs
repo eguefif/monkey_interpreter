@@ -1,4 +1,6 @@
-use ast_types::{Bool, InfixExpression, Integer, PrefixExpression, PrefixType};
+use ast_types::{
+    BlockStatement, Bool, IfExpression, InfixExpression, Integer, PrefixExpression, PrefixType,
+};
 
 use crate::parser::ast_types::{
     Expression, ExpressionStatement, Identifier, LetStatement, Precedence, Program,
@@ -120,6 +122,7 @@ impl<'a> Parser<'a> {
             TokenType::Minus => self.parse_minus(token),
             TokenType::True | TokenType::False => self.parse_bool(token),
             TokenType::Lparen => self.parse_group_expression(token),
+            TokenType::If => self.parse_if_expression(token),
             _ => todo!("not yet implement {:?}", token),
         };
         let mut left_expression = prefix;
@@ -134,6 +137,59 @@ impl<'a> Parser<'a> {
             }
         }
         left_expression
+    }
+
+    fn parse_if_expression(&mut self, token: Token) -> Expression {
+        self.expect_token(TokenType::Lparen);
+        let first_token = self
+            .lexer
+            .next()
+            .expect("Expect condition expression after if ()");
+        let condition = self.parse_expression(first_token, Precedence::Lowest);
+
+        self.expect_token(TokenType::Rparen);
+
+        self.expect_token(TokenType::Lbrace);
+
+        let consequence = self.parse_block_statement();
+
+        if let Some(peek) = self.lexer.peek() {
+            if peek.token_type == TokenType::Else {
+                self.lexer.next();
+                self.expect_token(TokenType::Lbrace);
+                let alternative = self.parse_block_statement();
+                return Expression::If(IfExpression {
+                    token,
+                    condition: Box::new(condition),
+                    consequence,
+                    alternative: Some(alternative),
+                });
+            }
+        }
+        Expression::If(IfExpression {
+            token,
+            condition: Box::new(condition),
+            consequence,
+            alternative: None,
+        })
+    }
+
+    fn parse_block_statement(&mut self) -> BlockStatement {
+        let mut statements: Vec<Statement> = vec![];
+        loop {
+            let token = self
+                .lexer
+                .next()
+                .expect("Block statement start with a left brace");
+            if token.token_type == TokenType::Rbrace {
+                break;
+            }
+            let stmt = self
+                .parse_statement(token.clone())
+                .expect("Statement is empty");
+            statements.push(stmt);
+        }
+        BlockStatement { statements }
     }
 
     fn parse_group_expression(&mut self, token: Token) -> Expression {
@@ -722,6 +778,54 @@ return add(5, 1);
             let program: Program = parser.parse_program().unwrap();
 
             assert_eq!(input.1, format!("{program}"));
+        }
+    }
+
+    #[test]
+    fn it_shoul_parse_if_statement() {
+        let input = "if (x < y) { x }";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        if let Statement::Expression(exp) = &program.statements[0] {
+            match exp.token.token_type {
+                TokenType::If => {}
+                _ => panic!("Not a if statement"),
+            }
+            if let Expression::If(if_stmt) = &exp.expression {
+                let condition = format!("{}", *if_stmt.condition);
+                assert_eq!(condition, "(x < y)");
+                let block = format!("{}", if_stmt.consequence);
+                assert_eq!(block, "x");
+                assert!(if_stmt.alternative.is_none())
+            }
+        } else {
+            panic!("Not an expression")
+        }
+    }
+
+    #[test]
+    fn it_shoul_parse_if_else_statement() {
+        let input = "if (x < y) { x } else { y }";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        if let Statement::Expression(exp) = &program.statements[0] {
+            match exp.token.token_type {
+                TokenType::If => {}
+                _ => panic!("Not a if statement"),
+            }
+            if let Expression::If(if_stmt) = &exp.expression {
+                let condition = format!("{}", *if_stmt.condition);
+                assert_eq!(condition, "(x < y)");
+                let block = format!("{}", if_stmt.consequence);
+                assert_eq!(block, "x");
+                if let Some(alternative) = &if_stmt.alternative {
+                    assert_eq!("y", format!("{}", alternative));
+                }
+            }
+        } else {
+            panic!("Not an expression")
         }
     }
 }
