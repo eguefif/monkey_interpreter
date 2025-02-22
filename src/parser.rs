@@ -415,11 +415,12 @@ let foobar = 838383;
         let input = "return;
 return 5;
 return 10;
+return add(5, 7);
 ";
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program: Program = parser.parse_program().unwrap();
-        assert_eq!(program.len(), 3);
+        assert_eq!(program.len(), 4);
         for (i, stmt) in program.statements.iter().enumerate() {
             if let Return(stmt) = stmt {
                 assert_eq!(stmt.token.token_type, TokenType::Return)
@@ -885,7 +886,7 @@ return 10;
     }
 
     #[test]
-    fn it_shoul_parse_if_statement() {
+    fn it_should_parse_if_statement() {
         let input = "if (x < y) { x }";
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -908,7 +909,7 @@ return 10;
     }
 
     #[test]
-    fn it_shoul_parse_if_else_statement() {
+    fn it_should_parse_if_else_statement() {
         let input = "if (x < y) { x } else { y }";
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -933,7 +934,7 @@ return 10;
     }
 
     #[test]
-    fn it_shoul_parse_if_else_statement_complex() {
+    fn it_should_parse_if_else_statement_complex() {
         let input = "if (x < y) {
 let z = 5 + 2;
 x + 3 - 3 * 2;

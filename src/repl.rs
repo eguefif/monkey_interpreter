@@ -1,3 +1,4 @@
+use monkey_interpreter::parser::Parser;
 use monkey_interpreter::tokenizer::lexer::Lexer;
 use std::io;
 use std::io::Write;
@@ -11,10 +12,10 @@ fn main() -> io::Result<()> {
         if buffer.as_str() == "exit" {
             break;
         }
-        let mut lexer = Lexer::new(&buffer);
-        while let Some(token) = lexer.next() {
-            println!("{token:?} ");
-        }
+        let lexer = Lexer::new(&buffer);
+        let mut parser = Parser::new(lexer);
+        let prog = parser.parse_program().expect("Error");
+        println!("{}", prog);
         buffer.clear();
     }
     Ok(())
