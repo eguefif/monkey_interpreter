@@ -76,17 +76,23 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_return_statement(&mut self, token: Token) -> ReturnStatement {
-        while let Some(token) = self.lexer.next() {
-            if token.token_type == TokenType::Semicolon {
-                break;
-            }
-        }
-        ReturnStatement {
-            token: token.clone(),
-            return_value: Expression::Identifier(Identifier {
-                value: token.litteral.clone(),
-                token: token,
-            }),
+        let next_token = self
+            .lexer
+            .next()
+            .expect("Unexpected end of file in return statement");
+        if next_token.token_type == TokenType::Semicolon {
+            let ret = ReturnStatement {
+                token: token.clone(),
+                return_value: None,
+            };
+            ret
+        } else {
+            let ret = ReturnStatement {
+                token: token.clone(),
+                return_value: Some(self.parse_expression(next_token, Precedence::Lowest)),
+            };
+            self.expect_token(TokenType::Semicolon);
+            ret
         }
     }
 
@@ -116,7 +122,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, token: Token, precedence: Precedence) -> Expression {
-        println!("Parse expression: {:?}", token);
         let prefix = match token.token_type {
             TokenType::Ident => self.parse_identifier(token),
             TokenType::Int(value) => self.parse_number(token, value),
@@ -349,10 +354,10 @@ let foobar = 838383;
 
     #[test]
     fn it_should_parse_return_statement() {
-        let input = "return 5;
+        let input = "return;
+return 5;
 return 10;
-return add(5, 1);
-    ";
+";
         let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
         let program: Program = parser.parse_program().unwrap();
@@ -894,8 +899,6 @@ y;
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let program: Program = parser.parse_program().unwrap();
-        println!("{}", program);
-        println!("{}", expected);
         assert_eq!(format!("{}", program), expected);
     }
 
@@ -903,19 +906,17 @@ y;
     fn it_should_parse_function() {
         let input = "fn my_function(x, y) {
             let retval = x + y;
-            retval;
+            return retval;
         }
         ";
         let expected = "fn my_function(x, y) {
 let retval = (x + y);
-retval;
+return retval;
 }
 ";
-        println!("{input}");
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let program: Program = parser.parse_program().unwrap();
-        println!("{program}");
         assert_eq!(format!("{}", program), expected)
     }
 }

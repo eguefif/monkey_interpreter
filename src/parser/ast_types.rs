@@ -72,12 +72,15 @@ impl fmt::Display for LetStatement {
 #[derive(Debug, PartialEq)]
 pub struct ReturnStatement {
     pub token: Token,
-    pub return_value: Expression,
+    pub return_value: Option<Expression>,
 }
 
 impl fmt::Display for ReturnStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "return {};", self.return_value)
+        match &self.return_value {
+            None => write!(f, "return;"),
+            Some(value) => write!(f, "return {};", value),
+        }
     }
 }
 
