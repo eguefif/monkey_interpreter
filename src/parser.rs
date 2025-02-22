@@ -1,6 +1,6 @@
 use ast_types::{
-    BlockStatement, Bool, FunctionExpression, IfExpression, InfixExpression, Integer,
-    PrefixExpression, PrefixType,
+    BlockStatement, Bool, CallExpression, FunctionExpression, IfExpression, InfixExpression,
+    Integer, PrefixExpression, PrefixType,
 };
 
 use crate::parser::ast_types::{
@@ -107,6 +107,20 @@ impl<'a> Parser<'a> {
         panic!(
             "Error: expect {:?} but got {:?}: {:?}",
             token_type, next.token_type, next,
+        );
+    }
+
+    fn expect_peek(&mut self, token_type: TokenType) -> bool {
+        let peek = self
+            .lexer
+            .peek()
+            .expect("Error: reach the EOF. Should have a token");
+        if peek.token_type == token_type {
+            return true;
+        }
+        panic!(
+            "Error: expect {:?} but got {:?}: {:?}",
+            token_type, peek.token_type, peek,
         );
     }
 
@@ -295,13 +309,56 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_infix_expression(&mut self, left: Expression, token: Token) -> Expression {
-        let next_token = self
+        if token.token_type == TokenType::Lparen {
+            Expression::CallExpression(CallExpression {
+                token: token,
+                function: Box::new(left),
+                args: self.parse_call_func_args(),
+            })
+        } else {
+            let next_token = self
+                .lexer
+                .next()
+                .expect("Infix expression has no right expression");
+            let precedence = get_precedence(&token.token_type);
+            let right = self.parse_expression(next_token, precedence);
+            Expression::InfixOp(InfixExpression::new(left, right, token))
+        }
+    }
+
+    fn parse_call_func_args(&mut self) -> Vec<Expression> {
+        let mut args: Vec<Expression> = Vec::new();
+        let peek = self
+            .lexer
+            .peek()
+            .expect("Unexpected end of file in function call");
+        if peek.token_type == TokenType::Rparen {
+            self.lexer.next();
+            return args;
+        }
+        let token = self
             .lexer
             .next()
-            .expect("Infix expression has no right expression");
-        let precedence = get_precedence(&token.token_type);
-        let right = self.parse_expression(next_token, precedence);
-        Expression::InfixOp(InfixExpression::new(left, right, token))
+            .expect("Unexpected end of file in function call");
+
+        args.push(self.parse_expression(token, Precedence::Lowest));
+        loop {
+            let peek = self
+                .lexer
+                .peek()
+                .expect("Unexpected end of file in function call");
+            if peek.token_type != TokenType::Comma {
+                break;
+            }
+            self.lexer.next();
+            let token = self
+                .lexer
+                .next()
+                .expect("Unexpected end of file in function call");
+            args.push(self.parse_expression(token, Precedence::Lowest));
+        }
+        self.expect_token(TokenType::Rparen);
+        args
     }
 }
 
@@ -315,6 +372,7 @@ fn get_precedence(token: &TokenType) -> Precedence {
         TokenType::Noteq => Precedence::Equals,
         TokenType::Gt => Precedence::Lessgreater,
         TokenType::Lt => Precedence::Lessgreater,
+        TokenType::Lparen => Precedence::Call,
         _ => Precedence::Lowest,
     }
 }
@@ -918,5 +976,35 @@ return retval;
         let mut parser = Parser::new(lexer);
         let program: Program = parser.parse_program().unwrap();
         assert_eq!(format!("{}", program), expected)
+    }
+
+    #[test]
+    fn it_should_parse_call_function() {
+        let input = "add(1, 2 * 3, 4 + 5);";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        let stmt = &program.statements[0];
+        if let Statement::Expression(expst) = stmt {
+            if let Expression::CallExpression(exp) = &expst.expression {
+                assert_eq!(exp.token.token_type, TokenType::Lparen);
+                if let Expression::Identifier(ref ident) = *exp.function {
+                    assert_eq!(ident.token.litteral, "add");
+                } else {
+                    panic!("Function is not an identifier")
+                }
+                assert_eq!(3, exp.args.len());
+                let arg1 = format!("{}", exp.args[0]);
+                let arg2 = format!("{}", exp.args[1]);
+                let arg3 = format!("{}", exp.args[2]);
+                assert_eq!("1", arg1);
+                assert_eq!("(2 * 3)", arg2);
+                assert_eq!("(4 + 5)", arg3);
+            } else {
+                panic!("Not a callExpression");
+            }
+        } else {
+            panic!("not a StatementExpression");
+        }
     }
 }

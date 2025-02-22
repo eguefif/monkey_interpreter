@@ -93,6 +93,7 @@ pub enum Expression {
     InfixOp(InfixExpression),
     If(IfExpression),
     Function(FunctionExpression),
+    CallExpression(CallExpression),
     None,
 }
 
@@ -106,6 +107,7 @@ impl fmt::Display for Expression {
             Expression::Boolean(value) => write!(f, "{}", value),
             Expression::If(value) => write!(f, "{}", value),
             Expression::Function(value) => write!(f, "{}", value),
+            Expression::CallExpression(value) => write!(f, "{}", value),
             Expression::None => write!(f, ""),
         }
     }
@@ -335,5 +337,18 @@ impl fmt::Display for FunctionExpression {
             "fn {}({}) {{\n{}\n}}",
             self.token.litteral, params, self.block
         )
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct CallExpression {
+    pub token: Token,
+    pub function: Box<Expression>,
+    pub args: Vec<Expression>,
+}
+
+impl fmt::Display for CallExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Function call")
     }
 }
