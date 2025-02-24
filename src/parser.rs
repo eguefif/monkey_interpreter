@@ -110,20 +110,6 @@ impl<'a> Parser<'a> {
         );
     }
 
-    fn expect_peek(&mut self, token_type: TokenType) -> bool {
-        let peek = self
-            .lexer
-            .peek()
-            .expect("Error: reach the EOF. Should have a token");
-        if peek.token_type == token_type {
-            return true;
-        }
-        panic!(
-            "Error: expect {:?} but got {:?}: {:?}",
-            token_type, peek.token_type, peek,
-        );
-    }
-
     fn parse_expression_statement(&mut self, token: Token) -> ExpressionStatement {
         let expression = self.parse_expression(token.clone(), Precedence::Lowest);
 
