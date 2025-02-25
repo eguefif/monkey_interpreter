@@ -1,8 +1,6 @@
 use crate::{
     object::{BoolObject, Int, Null, Object, ObjectType},
-    parser::ast_types::{
-        Bool, Expression, ExpressionStatement, Integer, PrefixExpression, PrefixType, Statement,
-    },
+    parser::ast_types::{Bool, Expression, Integer, PrefixExpression, PrefixType, Statement},
 };
 
 pub fn evaluate(stmt: &Statement) -> Option<Object> {
@@ -28,7 +26,17 @@ fn evaluate_expression(exp: &Expression) -> Option<Object> {
 fn evaluate_prefix(prefix: &PrefixExpression, right: Object) -> Option<Object> {
     match prefix.prefix_type {
         PrefixType::Bang => Some(evaluate_bang(right)),
+        PrefixType::Minus => Some(evaluate_minus(right)),
         _ => None,
+    }
+}
+
+fn evaluate_minus(right: Object) -> Object {
+    match right.obj_type {
+        ObjectType::Int(value) => Object::new(ObjectType::Int(Int {
+            value: -value.value,
+        })),
+        _ => Object::new(ObjectType::Null(Null {})),
     }
 }
 
@@ -78,7 +86,7 @@ mod tests {
 
     #[test]
     fn it_should_eval_integer() {
-        let tests = [("5", 5), ("10", 10)];
+        let tests = [("5", 5), ("10", 10), ("-5", -5), ("-10", -10)];
         for (input, expected) in tests {
             let obj = test_eval(input);
             assert_int(obj, expected)
