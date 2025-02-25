@@ -1,5 +1,6 @@
 use std::fmt;
 
+#[derive(Debug)]
 pub enum ObjectType {
     Int(Int),
     Str(Str),
@@ -18,6 +19,7 @@ impl fmt::Display for ObjectType {
     }
 }
 
+#[derive(Debug)]
 pub struct Object {
     pub obj_type: ObjectType,
     pub inspect: String,
@@ -36,6 +38,7 @@ impl fmt::Display for Object {
     }
 }
 
+#[derive(Debug)]
 pub struct Int {
     pub value: i128,
 }
@@ -46,6 +49,7 @@ impl fmt::Display for Int {
     }
 }
 
+#[derive(Debug)]
 pub struct Str {
     pub value: String,
 }
@@ -56,6 +60,7 @@ impl fmt::Display for Str {
     }
 }
 
+#[derive(Debug)]
 pub struct BoolObject {
     pub value: bool,
 }
@@ -66,6 +71,7 @@ impl fmt::Display for BoolObject {
     }
 }
 
+#[derive(Debug)]
 pub struct Null {}
 
 impl fmt::Display for Null {

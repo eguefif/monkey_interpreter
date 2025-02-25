@@ -27,6 +27,7 @@ fn evaluate_expression(exp: &Expression) -> Option<Object> {
 
             let left =
                 evaluate_expression(&infix.left).expect("error while evaluting infix expression");
+            println!("{:?} {:?} {:?}", left, infix.infix_type, right);
             evaluate_infix(&infix.infix_type, left, right)
         }
         _ => None,
@@ -187,6 +188,15 @@ mod tests {
             ("1 != 1", false),
             ("1 == 2", false),
             ("1 != 2", true),
+            ("true == true", true),
+            ("false == false", true),
+            ("true == false", false),
+            ("true != false", true),
+            ("false != true", true),
+            ("(1 < 2) == true", true),
+            ("(1 < 2) == false", false),
+            ("(1 > 2) == true", false),
+            ("(1 > 2) == false", true),
         ];
         for (input, expected) in tests {
             let obj = test_eval(input);
@@ -198,7 +208,8 @@ mod tests {
         if let ObjectType::Bool(boolean) = obj.obj_type {
             assert_eq!(expected, boolean.value)
         } else {
-            panic!("Obj is not an bool")
+            println!("{:} and expected: {:?}", obj, expected);
+            panic!("Obj is not a bool")
         }
     }
 
