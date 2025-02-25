@@ -3,16 +3,16 @@ use std::fmt;
 pub enum ObjectType {
     Int(Int),
     Str(Str),
-    Bool(Bool),
+    Bool(BoolObject),
     Null(Null),
 }
 
 impl fmt::Display for ObjectType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ObjectType::Int(value) => write!(f, "Integer: {}", value),
-            ObjectType::Str(value) => write!(f, "String: {}", value),
-            ObjectType::Bool(value) => write!(f, "Boolean: {}", value),
+            ObjectType::Int(value) => write!(f, "{}", value),
+            ObjectType::Str(value) => write!(f, "{}", value),
+            ObjectType::Bool(value) => write!(f, "{}", value),
             ObjectType::Null(value) => write!(f, "Null"),
         }
     }
@@ -30,8 +30,14 @@ impl Object {
     }
 }
 
+impl fmt::Display for Object {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.inspect)
+    }
+}
+
 pub struct Int {
-    pub value: i64,
+    pub value: i128,
 }
 
 impl fmt::Display for Int {
@@ -46,17 +52,17 @@ pub struct Str {
 
 impl fmt::Display for Str {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Integer: {}", self.value)
+        write!(f, "{}", self.value)
     }
 }
 
-pub struct Bool {
+pub struct BoolObject {
     pub value: bool,
 }
 
-impl fmt::Display for Bool {
+impl fmt::Display for BoolObject {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Boolean: {}", self.value)
+        write!(f, "{}", self.value)
     }
 }
 

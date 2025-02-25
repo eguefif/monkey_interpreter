@@ -1,3 +1,4 @@
+use monkey_interpreter::evaluator::evaluate;
 use monkey_interpreter::parser::Parser;
 use monkey_interpreter::tokenizer::lexer::Lexer;
 use std::io;
@@ -14,8 +15,12 @@ fn main() -> io::Result<()> {
         }
         let lexer = Lexer::new(&buffer);
         let mut parser = Parser::new(lexer);
-        let prog = parser.parse_program().expect("Error");
-        println!("{}", prog);
+        let program = parser.parse_program().expect("Error");
+        for statement in program.statements {
+            if let Some(output) = evaluate(&statement) {
+                println!("{}", output)
+            }
+        }
         buffer.clear();
     }
     Ok(())
