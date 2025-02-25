@@ -174,7 +174,20 @@ mod tests {
 
     #[test]
     fn it_should_eval_bool() {
-        let tests = [("true", true), ("false", false)];
+        let tests = [
+            ("true", true),
+            ("false", false),
+            ("true", true),
+            ("false", false),
+            ("1 < 2", true),
+            ("1 > 2", false),
+            ("1 < 1", false),
+            ("1 > 1", false),
+            ("1 == 1", true),
+            ("1 != 1", false),
+            ("1 == 2", false),
+            ("1 != 2", true),
+        ];
         for (input, expected) in tests {
             let obj = test_eval(input);
             assert_bool(obj, expected)
