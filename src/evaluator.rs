@@ -35,57 +35,142 @@ fn evaluate_expression(exp: &Expression) -> Option<Object> {
 }
 
 fn evaluate_infix(op: &InfixType, left: Object, right: Object) -> Option<Object> {
-    if let ObjectType::Int(right) = right.obj_type {
-        if let ObjectType::Int(left) = left.obj_type {
-            match op {
-                InfixType::Add => {
-                    return Some(Object::new(ObjectType::Int(Int {
-                        value: right.value + left.value,
-                    })))
-                }
-                InfixType::Sub => {
-                    return Some(Object::new(ObjectType::Int(Int {
-                        value: left.value - right.value,
-                    })))
-                }
-                InfixType::Mul => {
-                    return Some(Object::new(ObjectType::Int(Int {
-                        value: right.value * left.value,
-                    })))
-                }
-                InfixType::Div => {
-                    if right.value == 0 {
-                        panic!("Div by 0 is forbidden")
-                    }
-                    return Some(Object::new(ObjectType::Int(Int {
-                        value: left.value / right.value,
-                    })));
-                }
-                InfixType::Gt => {
-                    return Some(Object::new(ObjectType::Bool(BoolObject {
-                        value: left.value > right.value,
-                    })));
-                }
-                InfixType::Lt => {
-                    return Some(Object::new(ObjectType::Bool(BoolObject {
-                        value: left.value < right.value,
-                    })));
-                }
-                InfixType::Eq => {
-                    return Some(Object::new(ObjectType::Bool(BoolObject {
-                        value: left.value == right.value,
-                    })));
-                }
-                InfixType::Noteq => {
-                    return Some(Object::new(ObjectType::Bool(BoolObject {
-                        value: left.value != right.value,
-                    })));
-                }
-                InfixType::None => return Some(Object::new(ObjectType::Null(Null {}))),
+    match (left.obj_type, right.obj_type) {
+        (ObjectType::Int(left), ObjectType::Int(right)) => {
+            return evaluate_infix_int_vs_int(op, left.value, right.value);
+        }
+        (ObjectType::Bool(left), ObjectType::Int(right)) => {
+            return evaluate_infix_bool_vs_int(op, left.value, right.value);
+        }
+        (ObjectType::Int(left), ObjectType::Bool(right)) => {
+            return evaluate_infix_int_vs_bool(op, left.value, right.value);
+        }
+        (ObjectType::Bool(left), ObjectType::Bool(right)) => {
+            return evaluate_infix_bool_vs_bool(op, left.value, right.value);
+        }
+        _ => return Some(Object::new(ObjectType::Null(Null {}))),
+    }
+}
+
+fn evaluate_infix_int_vs_int(op: &InfixType, left: i128, right: i128) -> Option<Object> {
+    match op {
+        InfixType::Add => {
+            return Some(Object::new(ObjectType::Int(Int {
+                value: right + left,
+            })))
+        }
+        InfixType::Sub => {
+            return Some(Object::new(ObjectType::Int(Int {
+                value: left - right,
+            })))
+        }
+        InfixType::Mul => {
+            return Some(Object::new(ObjectType::Int(Int {
+                value: right * left,
+            })))
+        }
+        InfixType::Div => {
+            if right == 0 {
+                panic!("Div by 0 is forbidden")
+            }
+            return Some(Object::new(ObjectType::Int(Int {
+                value: left / right,
+            })));
+        }
+        InfixType::Gt => {
+            return Some(Object::new(ObjectType::Bool(BoolObject {
+                value: left > right,
+            })));
+        }
+        InfixType::Lt => {
+            return Some(Object::new(ObjectType::Bool(BoolObject {
+                value: left < right,
+            })));
+        }
+        InfixType::Eq => {
+            return Some(Object::new(ObjectType::Bool(BoolObject {
+                value: left == right,
+            })));
+        }
+        InfixType::Noteq => {
+            return Some(Object::new(ObjectType::Bool(BoolObject {
+                value: left != right,
+            })));
+        }
+        InfixType::None => return Some(Object::new(ObjectType::Null(Null {}))),
+    }
+}
+
+fn evaluate_infix_bool_vs_int(op: &InfixType, left: bool, right: i128) -> Option<Object> {
+    match op {
+        InfixType::Eq => {
+            if right == 0 {
+                return Some(Object::new(ObjectType::Bool(BoolObject {
+                    value: left == false,
+                })));
+            } else {
+                return Some(Object::new(ObjectType::Bool(BoolObject {
+                    value: left == true,
+                })));
             }
         }
+        InfixType::Noteq => {
+            if right == 0 {
+                return Some(Object::new(ObjectType::Bool(BoolObject {
+                    value: left != false,
+                })));
+            } else {
+                return Some(Object::new(ObjectType::Bool(BoolObject {
+                    value: left != true,
+                })));
+            }
+        }
+        _ => return Some(Object::new(ObjectType::Null(Null {}))),
     }
-    Some(Object::new(ObjectType::Null(Null {})))
+}
+
+fn evaluate_infix_int_vs_bool(op: &InfixType, left: i128, right: bool) -> Option<Object> {
+    match op {
+        InfixType::Eq => {
+            if left == 0 {
+                return Some(Object::new(ObjectType::Bool(BoolObject {
+                    value: false == right,
+                })));
+            } else {
+                return Some(Object::new(ObjectType::Bool(BoolObject {
+                    value: true == right,
+                })));
+            }
+        }
+        InfixType::Noteq => {
+            if left == 0 {
+                return Some(Object::new(ObjectType::Bool(BoolObject {
+                    value: false != right,
+                })));
+            } else {
+                return Some(Object::new(ObjectType::Bool(BoolObject {
+                    value: true != right,
+                })));
+            }
+        }
+        _ => return Some(Object::new(ObjectType::Null(Null {}))),
+    }
+}
+
+fn evaluate_infix_bool_vs_bool(op: &InfixType, left: bool, right: bool) -> Option<Object> {
+    match op {
+        InfixType::Eq => {
+            return Some(Object::new(ObjectType::Bool(BoolObject {
+                value: left == right,
+            })));
+        }
+        InfixType::Noteq => {
+            return Some(Object::new(ObjectType::Bool(BoolObject {
+                value: left != right,
+            })));
+        }
+        _ => return Some(Object::new(ObjectType::Null(Null {}))),
+    }
 }
 
 fn evaluate_prefix(prefix: &PrefixExpression, right: Object) -> Option<Object> {
