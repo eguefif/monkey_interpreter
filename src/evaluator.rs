@@ -1,20 +1,62 @@
 use crate::{
     object::{BoolObject, Int, Null, Object, ObjectType},
-    parser::ast_types::{Bool, Expression, ExpressionStatement, Integer, Statement},
+    parser::ast_types::{
+        Bool, Expression, ExpressionStatement, Integer, PrefixExpression, PrefixType, Statement,
+    },
 };
 
 pub fn evaluate(stmt: &Statement) -> Option<Object> {
     match stmt {
-        Statement::Expression(exp) => evaluate_expression(exp),
+        Statement::Expression(exp) => evaluate_expression(&exp.expression),
         _ => None,
     }
 }
 
-fn evaluate_expression(exp: &ExpressionStatement) -> Option<Object> {
-    match &exp.expression {
+fn evaluate_expression(exp: &Expression) -> Option<Object> {
+    match exp {
+        Expression::PrefixOp(prefix) => {
+            let right =
+                evaluate_expression(&prefix.right).expect("Error while evaluating expression");
+            evaluate_prefix(prefix, right)
+        }
         Expression::Int(int) => Some(make_int(int)),
         Expression::Boolean(boolean) => Some(make_bool(boolean)),
         _ => None,
+    }
+}
+
+fn evaluate_prefix(prefix: &PrefixExpression, right: Object) -> Option<Object> {
+    match prefix.prefix_type {
+        PrefixType::Bang => Some(evaluate_bang(right)),
+        _ => None,
+    }
+}
+
+fn evaluate_bang(right: Object) -> Object {
+    match right.obj_type {
+        ObjectType::Int(value) => {
+            if value.value == 0 {
+                Object::new(ObjectType::Bool(BoolObject { value: true }))
+            } else {
+                Object::new(ObjectType::Bool(BoolObject { value: false }))
+            }
+        }
+        ObjectType::Str(value) => {
+            if value.value.len() == 0 {
+                Object::new(ObjectType::Bool(BoolObject { value: true }))
+            } else {
+                Object::new(ObjectType::Bool(BoolObject { value: false }))
+            }
+        }
+
+        ObjectType::Bool(boolean) => {
+            if boolean.value {
+                Object::new(ObjectType::Bool(BoolObject { value: false }))
+            } else {
+                Object::new(ObjectType::Bool(BoolObject { value: true }))
+            }
+        }
+        ObjectType::Null(_) => Object::new(ObjectType::Bool(BoolObject { value: true })),
     }
 }
 
@@ -72,6 +114,22 @@ mod tests {
             assert_eq!(expected, boolean.value)
         } else {
             panic!("Obj is not an bool")
+        }
+    }
+
+    #[test]
+    fn it_should_eval_bang_op() {
+        let tests = [
+            ("!true", false),
+            ("!false", true),
+            ("!5", false),
+            ("!!true", true),
+            ("!!false", false),
+            ("!!5", true),
+        ];
+        for (input, expected) in tests {
+            let obj = test_eval(input);
+            assert_bool(obj, expected)
         }
     }
 }
