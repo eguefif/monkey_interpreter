@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-use crate::evaluator::evaluate;
+use crate::evaluator::eval_program;
 use crate::parser::Parser;
 use crate::tokenizer::lexer::Lexer;
 use std::fs;
@@ -15,6 +15,6 @@ pub fn interpret(filename: String) {
     let mut parser = Parser::new(lexer);
     let ast = parser.parse_program();
     if let Some(program) = ast {
-        evaluate(&program.statements);
+        eval_program(&program.statements);
     }
 }

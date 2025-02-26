@@ -6,15 +6,32 @@ use crate::{
     },
 };
 
-pub fn evaluate(statements: &Vec<Statement>) -> Object {
+pub fn eval_program(statements: &Vec<Statement>) -> Object {
     let null = Object::new(ObjectType::Null);
     let mut retval = Object::new(ObjectType::Return(Box::new(null)));
     for statement in statements {
-        retval = match statement {
-            Statement::Expression(exp) => evaluate_expression(&exp.expression),
-            Statement::Return(exp) => evaluate_return(&exp),
-            _ => Object::new(ObjectType::Null),
-        };
+        retval = evaluate(statement);
+        if let ObjectType::Return(value) = retval.obj_type {
+            return *value;
+        }
+    }
+    retval
+}
+
+fn evaluate(statement: &Statement) -> Object {
+    let retval = match statement {
+        Statement::Expression(exp) => evaluate_expression(&exp.expression),
+        Statement::Return(exp) => evaluate_return(&exp),
+        _ => Object::new(ObjectType::Null),
+    };
+    retval
+}
+
+fn evaluate_block_statement(statements: &Vec<Statement>) -> Object {
+    let null = Object::new(ObjectType::Null);
+    let mut retval = Object::new(ObjectType::Return(Box::new(null)));
+    for statement in statements {
+        retval = evaluate(statement);
         if let ObjectType::Return(_) = retval.obj_type {
             return retval;
         }
@@ -37,10 +54,10 @@ fn evaluate_expression(exp: &Expression) -> Object {
         Expression::If(if_exp) => {
             let cond = evaluate_expression(&if_exp.condition);
             if is_obj_truthy(cond) {
-                return evaluate(&if_exp.consequence.statements);
+                return evaluate_block_statement(&if_exp.consequence.statements);
             } else {
                 if let Some(alternative) = &if_exp.alternative {
-                    return evaluate(&alternative.statements);
+                    return evaluate_block_statement(&alternative.statements);
                 } else {
                     return Object::new(ObjectType::Null);
                 }
@@ -290,7 +307,7 @@ mod tests {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let prog = parser.parse_program().expect("Expect a program");
-        evaluate(&prog.statements)
+        eval_program(&prog.statements)
     }
 
     fn assert_int(obj: Object, expected: i128) {
@@ -435,15 +452,10 @@ return 1;
         ";
 
         let obj = test_eval(input);
-        println!("{:?}", obj);
         assert_return(obj, &ObjectType::Int(Int { value: 10 }))
     }
 
     fn assert_return(obj: Object, expected: &ObjectType) {
-        if let ObjectType::Return(value) = obj.obj_type {
-            assert_eq!(value.obj_type, *expected)
-        } else {
-            panic!("Not a return object");
-        }
+        assert_eq!(obj.obj_type, *expected)
     }
 }
