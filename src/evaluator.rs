@@ -1,15 +1,34 @@
 use crate::{
     object::{BoolObject, Int, Null, Object, ObjectType},
     parser::ast_types::{
-        BlockStatement, Bool, Expression, InfixType, Integer, PrefixExpression, PrefixType,
+        Bool, Expression, InfixType, Integer, PrefixExpression, PrefixType, ReturnStatement,
         Statement,
     },
 };
 
-pub fn evaluate(stmt: &Statement) -> Option<Object> {
-    match stmt {
-        Statement::Expression(exp) => evaluate_expression(&exp.expression),
-        _ => None,
+pub fn evaluate(statements: &Vec<Statement>) -> Option<Object> {
+    let mut retval = None;
+    for statement in statements {
+        retval = match statement {
+            Statement::Expression(exp) => evaluate_expression(&exp.expression),
+            Statement::Return(exp) => evaluate_return(&exp),
+            _ => None,
+        };
+        if let Some(value) = retval {
+            if let ObjectType::Return(_) = value.obj_type {
+                return Some(value);
+            }
+        }
+    }
+    retval
+}
+
+fn evaluate_return(exp: &ReturnStatement) -> Option<Object> {
+    if let Some(retval) = &exp.return_value {
+        let obj = evaluate_expression(&retval)?;
+        Some(Object::new(ObjectType::Return(Box::new(obj))))
+    } else {
+        Some(Object::new(ObjectType::Return(Null(Null {})))))
     }
 }
 
@@ -19,10 +38,10 @@ fn evaluate_expression(exp: &Expression) -> Option<Object> {
             let cond = evaluate_expression(&if_exp.condition)
                 .expect("Error while evaluation condition in if condition");
             if is_obj_truthy(cond) {
-                return evaluate_block_statement(&if_exp.consequence);
+                return evaluate(&if_exp.consequence.statements);
             } else {
                 if let Some(alternative) = &if_exp.alternative {
-                    return evaluate_block_statement(&alternative);
+                    return evaluate(&alternative.statements);
                 } else {
                     return Some(Object::new(ObjectType::Null(Null {})));
                 }
@@ -72,10 +91,6 @@ fn is_obj_truthy(obj: Object) -> bool {
         }
         _ => false,
     }
-}
-
-fn evaluate_block_statement(block: &BlockStatement) -> Option<Object> {
-    return evaluate(&block.statements[0]);
 }
 
 fn evaluate_infix(op: &InfixType, left: Object, right: Object) -> Option<Object> {
@@ -258,7 +273,7 @@ fn evaluate_bang(right: Object) -> Object {
                 Object::new(ObjectType::Bool(BoolObject { value: true }))
             }
         }
-        ObjectType::Null(_) => Object::new(ObjectType::Bool(BoolObject { value: true })),
+        _ => Object::new(ObjectType::Bool(BoolObject { value: true })),
     }
 }
 
@@ -291,7 +306,7 @@ mod tests {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let prog = parser.parse_program().expect("Expect a program");
-        evaluate(&prog.statements[0]).expect("No evaluation possible")
+        evaluate(&prog.statements).expect("No evaluation possible")
     }
 
     fn assert_int(obj: Object, expected: i128) {
@@ -406,5 +421,35 @@ mod tests {
             let obj = test_eval(input);
             assert_eq!(obj.obj_type, expected)
         }
+    }
+
+    #[test]
+    fn it_should_evaluate_return_statement() {
+        let tests = [
+            ("return 10;", ObjectType::Int(Int { value: 10 })),
+            ("return 10; 9;", ObjectType::Int(Int { value: 10 })),
+            ("return 2 * 5; 8;", ObjectType::Int(Int { value: 10 })),
+            ("9; return 2 * 5; 9;", ObjectType::Int(Int { value: 10 })),
+        ];
+
+        for (input, expected) in tests {
+            let obj = test_eval(input);
+            assert_eq!(obj.obj_type, expected)
+        }
+    }
+
+    #[test]
+    fn it_should_evaluate_return_statement_multiple_blocks() {
+        let input = "
+if (10 > 1) {
+    if (10 > 1) {
+        return 10;
+    }
+}
+return 1;
+        ";
+
+        let obj = test_eval(input);
+        assert_eq!(obj.obj_type, ObjectType::Int(Int { value: 10 }))
     }
 }

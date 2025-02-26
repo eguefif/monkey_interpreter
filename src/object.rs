@@ -5,6 +5,7 @@ pub enum ObjectType {
     Int(Int),
     Str(Str),
     Bool(BoolObject),
+    Return(Box<Object>),
     Null(Null),
 }
 
@@ -14,6 +15,7 @@ impl fmt::Display for ObjectType {
             ObjectType::Int(value) => write!(f, "{}", value),
             ObjectType::Str(value) => write!(f, "{}", value),
             ObjectType::Bool(value) => write!(f, "{}", value),
+            ObjectType::Return(value) => write!(f, "{}", value),
             ObjectType::Null(value) => write!(f, "Null"),
         }
     }

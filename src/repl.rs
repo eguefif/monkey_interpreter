@@ -16,10 +16,8 @@ fn main() -> io::Result<()> {
         let lexer = Lexer::new(&buffer);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().expect("Error");
-        for statement in program.statements {
-            if let Some(output) = evaluate(&statement) {
-                println!("{}", output)
-            }
+        if let Some(output) = evaluate(&program.statements) {
+            println!("{}", output)
         }
         buffer.clear();
     }
