@@ -6,7 +6,7 @@ pub enum ObjectType {
     Str(Str),
     Bool(BoolObject),
     Return(Box<Object>),
-    Null(Null),
+    Null,
 }
 
 impl fmt::Display for ObjectType {
@@ -16,7 +16,7 @@ impl fmt::Display for ObjectType {
             ObjectType::Str(value) => write!(f, "{}", value),
             ObjectType::Bool(value) => write!(f, "{}", value),
             ObjectType::Return(value) => write!(f, "{}", value),
-            ObjectType::Null(value) => write!(f, "Null"),
+            ObjectType::Null => write!(f, "Null"),
         }
     }
 }
@@ -73,6 +73,7 @@ impl fmt::Display for BoolObject {
     }
 }
 
+/*
 #[derive(Debug, PartialEq)]
 pub struct Null {}
 
@@ -81,3 +82,4 @@ impl fmt::Display for Null {
         write!(f, "Null")
     }
 }
+*/

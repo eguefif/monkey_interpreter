@@ -1,68 +1,64 @@
 use crate::{
-    object::{BoolObject, Int, Null, Object, ObjectType},
+    object::{BoolObject, Int, Object, ObjectType},
     parser::ast_types::{
         Bool, Expression, InfixType, Integer, PrefixExpression, PrefixType, ReturnStatement,
         Statement,
     },
 };
 
-pub fn evaluate(statements: &Vec<Statement>) -> Option<Object> {
-    let mut retval = None;
+pub fn evaluate(statements: &Vec<Statement>) -> Object {
+    let null = Object::new(ObjectType::Null);
+    let mut retval = Object::new(ObjectType::Return(Box::new(null)));
     for statement in statements {
         retval = match statement {
             Statement::Expression(exp) => evaluate_expression(&exp.expression),
             Statement::Return(exp) => evaluate_return(&exp),
-            _ => None,
+            _ => Object::new(ObjectType::Null),
         };
-        if let Some(value) = retval {
-            if let ObjectType::Return(_) = value.obj_type {
-                return Some(value);
-            }
+        if let ObjectType::Return(_) = retval.obj_type {
+            return retval;
         }
     }
     retval
 }
 
-fn evaluate_return(exp: &ReturnStatement) -> Option<Object> {
+fn evaluate_return(exp: &ReturnStatement) -> Object {
     if let Some(retval) = &exp.return_value {
-        let obj = evaluate_expression(&retval)?;
-        Some(Object::new(ObjectType::Return(Box::new(obj))))
+        let obj = evaluate_expression(&retval);
+        Object::new(ObjectType::Return(Box::new(obj)))
     } else {
-        Some(Object::new(ObjectType::Return(Null(Null {})))))
+        let null = Object::new(ObjectType::Null);
+        Object::new(ObjectType::Return(Box::new(null)))
     }
 }
 
-fn evaluate_expression(exp: &Expression) -> Option<Object> {
+fn evaluate_expression(exp: &Expression) -> Object {
     match exp {
         Expression::If(if_exp) => {
-            let cond = evaluate_expression(&if_exp.condition)
-                .expect("Error while evaluation condition in if condition");
+            let cond = evaluate_expression(&if_exp.condition);
             if is_obj_truthy(cond) {
                 return evaluate(&if_exp.consequence.statements);
             } else {
                 if let Some(alternative) = &if_exp.alternative {
                     return evaluate(&alternative.statements);
                 } else {
-                    return Some(Object::new(ObjectType::Null(Null {})));
+                    return Object::new(ObjectType::Null);
                 }
             }
         }
         Expression::PrefixOp(prefix) => {
-            let right = evaluate_expression(&prefix.right)
-                .expect("Error while evaluating prefix expression");
+            let right = evaluate_expression(&prefix.right);
             evaluate_prefix(prefix, right)
         }
-        Expression::Int(int) => Some(make_int(int)),
-        Expression::Boolean(boolean) => Some(make_bool(boolean)),
+        Expression::Int(int) => make_int(int),
+        Expression::Boolean(boolean) => make_bool(boolean),
         Expression::InfixOp(infix) => {
-            let right =
-                evaluate_expression(&infix.right).expect("error while evaluting infix expression");
+            let right = evaluate_expression(&infix.right);
 
-            let left =
-                evaluate_expression(&infix.left).expect("error while evaluting infix expression");
+            let left = evaluate_expression(&infix.left);
             evaluate_infix(&infix.infix_type, left, right)
         }
-        _ => None,
+        _ => Object::new(ObjectType::Null),
     }
 }
 
@@ -93,7 +89,7 @@ fn is_obj_truthy(obj: Object) -> bool {
     }
 }
 
-fn evaluate_infix(op: &InfixType, left: Object, right: Object) -> Option<Object> {
+fn evaluate_infix(op: &InfixType, left: Object, right: Object) -> Object {
     match (left.obj_type, right.obj_type) {
         (ObjectType::Int(left), ObjectType::Int(right)) => {
             return evaluate_infix_int_vs_int(op, left.value, right.value);
@@ -107,136 +103,124 @@ fn evaluate_infix(op: &InfixType, left: Object, right: Object) -> Option<Object>
         (ObjectType::Bool(left), ObjectType::Bool(right)) => {
             return evaluate_infix_bool_vs_bool(op, left.value, right.value);
         }
-        _ => return Some(Object::new(ObjectType::Null(Null {}))),
+        _ => return Object::new(ObjectType::Null),
     }
 }
 
-fn evaluate_infix_int_vs_int(op: &InfixType, left: i128, right: i128) -> Option<Object> {
+fn evaluate_infix_int_vs_int(op: &InfixType, left: i128, right: i128) -> Object {
     match op {
         InfixType::Add => {
-            return Some(Object::new(ObjectType::Int(Int {
+            return Object::new(ObjectType::Int(Int {
                 value: right + left,
-            })))
+            }))
         }
         InfixType::Sub => {
-            return Some(Object::new(ObjectType::Int(Int {
+            return Object::new(ObjectType::Int(Int {
                 value: left - right,
-            })))
+            }))
         }
-        InfixType::Mul => {
-            return Some(Object::new(ObjectType::Int(Int {
-                value: right * left,
-            })))
-        }
+        InfixType::Mul => Object::new(ObjectType::Int(Int {
+            value: right * left,
+        })),
         InfixType::Div => {
             if right == 0 {
                 panic!("Div by 0 is forbidden")
             }
-            return Some(Object::new(ObjectType::Int(Int {
+            Object::new(ObjectType::Int(Int {
                 value: left / right,
-            })));
+            }))
         }
-        InfixType::Gt => {
-            return Some(Object::new(ObjectType::Bool(BoolObject {
-                value: left > right,
-            })));
-        }
-        InfixType::Lt => {
-            return Some(Object::new(ObjectType::Bool(BoolObject {
-                value: left < right,
-            })));
-        }
-        InfixType::Eq => {
-            return Some(Object::new(ObjectType::Bool(BoolObject {
-                value: left == right,
-            })));
-        }
-        InfixType::Noteq => {
-            return Some(Object::new(ObjectType::Bool(BoolObject {
-                value: left != right,
-            })));
-        }
-        InfixType::None => return Some(Object::new(ObjectType::Null(Null {}))),
+        InfixType::Gt => Object::new(ObjectType::Bool(BoolObject {
+            value: left > right,
+        })),
+        InfixType::Lt => Object::new(ObjectType::Bool(BoolObject {
+            value: left < right,
+        })),
+        InfixType::Eq => Object::new(ObjectType::Bool(BoolObject {
+            value: left == right,
+        })),
+        InfixType::Noteq => Object::new(ObjectType::Bool(BoolObject {
+            value: left != right,
+        })),
+        InfixType::None => Object::new(ObjectType::Null),
     }
 }
 
-fn evaluate_infix_bool_vs_int(op: &InfixType, left: bool, right: i128) -> Option<Object> {
+fn evaluate_infix_bool_vs_int(op: &InfixType, left: bool, right: i128) -> Object {
     match op {
         InfixType::Eq => {
             if right == 0 {
-                return Some(Object::new(ObjectType::Bool(BoolObject {
+                Object::new(ObjectType::Bool(BoolObject {
                     value: left == false,
-                })));
+                }))
             } else {
-                return Some(Object::new(ObjectType::Bool(BoolObject {
+                Object::new(ObjectType::Bool(BoolObject {
                     value: left == true,
-                })));
+                }))
             }
         }
         InfixType::Noteq => {
             if right == 0 {
-                return Some(Object::new(ObjectType::Bool(BoolObject {
+                Object::new(ObjectType::Bool(BoolObject {
                     value: left != false,
-                })));
+                }))
             } else {
-                return Some(Object::new(ObjectType::Bool(BoolObject {
+                Object::new(ObjectType::Bool(BoolObject {
                     value: left != true,
-                })));
+                }))
             }
         }
-        _ => return Some(Object::new(ObjectType::Null(Null {}))),
+        _ => return Object::new(ObjectType::Null),
     }
 }
 
-fn evaluate_infix_int_vs_bool(op: &InfixType, left: i128, right: bool) -> Option<Object> {
+fn evaluate_infix_int_vs_bool(op: &InfixType, left: i128, right: bool) -> Object {
     match op {
         InfixType::Eq => {
             if left == 0 {
-                return Some(Object::new(ObjectType::Bool(BoolObject {
+                Object::new(ObjectType::Bool(BoolObject {
                     value: false == right,
-                })));
+                }))
             } else {
-                return Some(Object::new(ObjectType::Bool(BoolObject {
+                Object::new(ObjectType::Bool(BoolObject {
                     value: true == right,
-                })));
+                }))
             }
         }
         InfixType::Noteq => {
             if left == 0 {
-                return Some(Object::new(ObjectType::Bool(BoolObject {
+                Object::new(ObjectType::Bool(BoolObject {
                     value: false != right,
-                })));
+                }))
             } else {
-                return Some(Object::new(ObjectType::Bool(BoolObject {
+                Object::new(ObjectType::Bool(BoolObject {
                     value: true != right,
-                })));
+                }))
             }
         }
-        _ => return Some(Object::new(ObjectType::Null(Null {}))),
+        _ => return Object::new(ObjectType::Null),
     }
 }
 
-fn evaluate_infix_bool_vs_bool(op: &InfixType, left: bool, right: bool) -> Option<Object> {
+fn evaluate_infix_bool_vs_bool(op: &InfixType, left: bool, right: bool) -> Object {
     match op {
         InfixType::Eq => {
-            return Some(Object::new(ObjectType::Bool(BoolObject {
+            return Object::new(ObjectType::Bool(BoolObject {
                 value: left == right,
-            })));
+            }))
         }
-        InfixType::Noteq => {
-            return Some(Object::new(ObjectType::Bool(BoolObject {
-                value: left != right,
-            })));
-        }
-        _ => return Some(Object::new(ObjectType::Null(Null {}))),
+        InfixType::Noteq => Object::new(ObjectType::Bool(BoolObject {
+            value: left != right,
+        })),
+        _ => return Object::new(ObjectType::Null),
     }
 }
 
-fn evaluate_prefix(prefix: &PrefixExpression, right: Object) -> Option<Object> {
+fn evaluate_prefix(prefix: &PrefixExpression, right: Object) -> Object {
     match prefix.prefix_type {
-        PrefixType::Bang => Some(evaluate_bang(right)),
-        PrefixType::Minus => Some(evaluate_minus(right)),
-        _ => None,
+        PrefixType::Bang => evaluate_bang(right),
+        PrefixType::Minus => evaluate_minus(right),
+        _ => Object::new(ObjectType::Null),
     }
 }
 
@@ -245,7 +229,7 @@ fn evaluate_minus(right: Object) -> Object {
         ObjectType::Int(value) => Object::new(ObjectType::Int(Int {
             value: -value.value,
         })),
-        _ => Object::new(ObjectType::Null(Null {})),
+        _ => Object::new(ObjectType::Null),
     }
 }
 
@@ -306,7 +290,7 @@ mod tests {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let prog = parser.parse_program().expect("Expect a program");
-        evaluate(&prog.statements).expect("No evaluation possible")
+        evaluate(&prog.statements)
     }
 
     fn assert_int(obj: Object, expected: i128) {
@@ -403,10 +387,10 @@ mod tests {
     fn it_should_evaluate_if_condition() {
         let tests = [
             ("if (true) { 10 }", ObjectType::Int(Int { value: 10 })),
-            ("if (false) { 10 }", ObjectType::Null(Null {})),
+            ("if (false) { 10 }", ObjectType::Null),
             ("if (1) { 10 }", ObjectType::Int(Int { value: 10 })),
             ("if (1 < 2) { 10 }", ObjectType::Int(Int { value: 10 })),
-            ("if (1 > 2) { 10 }", ObjectType::Null(Null {})),
+            ("if (1 > 2) { 10 }", ObjectType::Null),
             (
                 "if (1 > 2) { 10 } else { 20 }",
                 ObjectType::Int(Int { value: 20 }),
@@ -434,7 +418,8 @@ mod tests {
 
         for (input, expected) in tests {
             let obj = test_eval(input);
-            assert_eq!(obj.obj_type, expected)
+            println!("{:?}", obj);
+            assert_return(obj, &expected);
         }
     }
 
@@ -450,6 +435,15 @@ return 1;
         ";
 
         let obj = test_eval(input);
-        assert_eq!(obj.obj_type, ObjectType::Int(Int { value: 10 }))
+        println!("{:?}", obj);
+        assert_return(obj, &ObjectType::Int(Int { value: 10 }))
+    }
+
+    fn assert_return(obj: Object, expected: &ObjectType) {
+        if let ObjectType::Return(value) = obj.obj_type {
+            assert_eq!(value.obj_type, *expected)
+        } else {
+            panic!("Not a return object");
+        }
     }
 }
