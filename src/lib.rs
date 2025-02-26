@@ -15,6 +15,9 @@ pub fn interpret(filename: String) {
     let mut parser = Parser::new(lexer);
     let ast = parser.parse_program();
     if let Some(program) = ast {
-        eval_program(&program.statements);
+        match eval_program(&program.statements) {
+            Ok(output) => println!("{}", output),
+            Err(output) => println!("{}", output),
+        }
     }
 }
