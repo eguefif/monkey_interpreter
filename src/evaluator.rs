@@ -1,7 +1,8 @@
 use crate::{
     object::{BoolObject, Int, Null, Object, ObjectType},
     parser::ast_types::{
-        Bool, Expression, InfixType, Integer, PrefixExpression, PrefixType, Statement,
+        BlockStatement, Bool, Expression, InfixType, Integer, PrefixExpression, PrefixType,
+        Statement,
     },
 };
 
@@ -14,6 +15,19 @@ pub fn evaluate(stmt: &Statement) -> Option<Object> {
 
 fn evaluate_expression(exp: &Expression) -> Option<Object> {
     match exp {
+        Expression::If(if_exp) => {
+            let cond = evaluate_expression(&if_exp.condition)
+                .expect("Error while evaluation condition in if condition");
+            if is_obj_truthy(cond) {
+                return evaluate_block_statement(&if_exp.consequence);
+            } else {
+                if let Some(alternative) = &if_exp.alternative {
+                    return evaluate_block_statement(&alternative);
+                } else {
+                    return Some(Object::new(ObjectType::Null(Null {})));
+                }
+            }
+        }
         Expression::PrefixOp(prefix) => {
             let right = evaluate_expression(&prefix.right)
                 .expect("Error while evaluating prefix expression");
@@ -27,11 +41,41 @@ fn evaluate_expression(exp: &Expression) -> Option<Object> {
 
             let left =
                 evaluate_expression(&infix.left).expect("error while evaluting infix expression");
-            println!("{:?} {:?} {:?}", left, infix.infix_type, right);
             evaluate_infix(&infix.infix_type, left, right)
         }
         _ => None,
     }
+}
+
+fn is_obj_truthy(obj: Object) -> bool {
+    match obj.obj_type {
+        ObjectType::Bool(value) => {
+            if value.value {
+                true
+            } else {
+                false
+            }
+        }
+        ObjectType::Int(value) => {
+            if value.value == 0 {
+                false
+            } else {
+                true
+            }
+        }
+        ObjectType::Str(value) => {
+            if value.value.len() > 0 {
+                true
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+fn evaluate_block_statement(block: &BlockStatement) -> Option<Object> {
+    return evaluate(&block.statements[0]);
 }
 
 fn evaluate_infix(op: &InfixType, left: Object, right: Object) -> Option<Object> {
@@ -337,6 +381,30 @@ mod tests {
         for (input, expected) in tests {
             let obj = test_eval(input);
             assert_int(obj, expected)
+        }
+    }
+
+    #[test]
+    fn it_should_evaluate_if_condition() {
+        let tests = [
+            ("if (true) { 10 }", ObjectType::Int(Int { value: 10 })),
+            ("if (false) { 10 }", ObjectType::Null(Null {})),
+            ("if (1) { 10 }", ObjectType::Int(Int { value: 10 })),
+            ("if (1 < 2) { 10 }", ObjectType::Int(Int { value: 10 })),
+            ("if (1 > 2) { 10 }", ObjectType::Null(Null {})),
+            (
+                "if (1 > 2) { 10 } else { 20 }",
+                ObjectType::Int(Int { value: 20 }),
+            ),
+            (
+                "if (1 < 2) { 10 } else { 20 }",
+                ObjectType::Int(Int { value: 10 }),
+            ),
+        ];
+
+        for (input, expected) in tests {
+            let obj = test_eval(input);
+            assert_eq!(obj.obj_type, expected)
         }
     }
 }
