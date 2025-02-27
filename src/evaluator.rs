@@ -1,47 +1,68 @@
+// Todo: refactor into a struct to keep a mutable vec of identifiers ?
 use crate::{
-    object::{BoolObject, Int, Object, ObjectType},
+    object::{BoolObject, Int, Object, ObjectType, Variable},
     parser::ast_types::{
-        Bool, Expression, InfixType, Integer, PrefixExpression, PrefixType, ReturnStatement,
-        Statement,
+        Bool, Expression, InfixType, Integer, LetStatement, PrefixExpression, PrefixType,
+        ReturnStatement, Statement,
     },
 };
 
 pub fn eval_program(statements: &Vec<Statement>) -> Result<Object, String> {
     let null = Object::new(ObjectType::Null);
     let mut retval = Object::new(ObjectType::Return(Box::new(null)));
+    let mut variables: Vec<Variable> = Vec::new();
     for statement in statements {
-        retval = evaluate(statement)?;
-        if let ObjectType::Return(value) = retval.obj_type {
-            return Ok(*value);
+        retval = evaluate(statement, &variables)?;
+        retval = match retval.obj_type {
+            ObjectType::Let(value) => {
+                variables.push(*value);
+                Object::new(ObjectType::Null)
+            }
+            ObjectType::Return(value) => return Ok(*value),
+            _ => retval,
         }
     }
     Ok(retval)
 }
 
-fn evaluate(statement: &Statement) -> Result<Object, String> {
+fn evaluate(statement: &Statement, variables: &Vec<Variable>) -> Result<Object, String> {
     let retval = match statement {
-        Statement::Expression(exp) => evaluate_expression(&exp.expression),
-        Statement::Return(exp) => evaluate_return(&exp),
-        _ => Ok(Object::new(ObjectType::Null)),
+        Statement::Expression(exp) => evaluate_expression(&exp.expression, variables),
+        Statement::Return(exp) => evaluate_return(&exp, variables),
+        Statement::Let(exp) => evaluate_let(&exp, variables),
     };
     retval
 }
 
-fn evaluate_block_statement(statements: &Vec<Statement>) -> Result<Object, String> {
+fn evaluate_let(exp: &LetStatement, variables: &Vec<Variable>) -> Result<Object, String> {
+    let value = evaluate_expression(&exp.value, variables)?;
+    let var = Variable {
+        value,
+        name: exp.identifier.value.clone(),
+    };
+    Ok(Object::new(ObjectType::Let(Box::new(var))))
+}
+
+fn evaluate_block_statement(
+    statements: &Vec<Statement>,
+    variables: &Vec<Variable>,
+) -> Result<Object, String> {
     let null = Object::new(ObjectType::Null);
     let mut retval = Object::new(ObjectType::Return(Box::new(null)));
     for statement in statements {
-        retval = evaluate(statement)?;
-        if let ObjectType::Return(_) = retval.obj_type {
-            return Ok(retval);
+        retval = evaluate(statement, variables)?;
+
+        retval = match retval.obj_type {
+            ObjectType::Return(_) => return Ok(retval),
+            _ => retval,
         }
     }
     Ok(retval)
 }
 
-fn evaluate_return(exp: &ReturnStatement) -> Result<Object, String> {
+fn evaluate_return(exp: &ReturnStatement, variables: &Vec<Variable>) -> Result<Object, String> {
     if let Some(retval) = &exp.return_value {
-        let obj = evaluate_expression(&retval)?;
+        let obj = evaluate_expression(&retval, variables)?;
         Ok(Object::new(ObjectType::Return(Box::new(obj))))
     } else {
         let null = Object::new(ObjectType::Null);
@@ -49,34 +70,51 @@ fn evaluate_return(exp: &ReturnStatement) -> Result<Object, String> {
     }
 }
 
-fn evaluate_expression(exp: &Expression) -> Result<Object, String> {
+fn evaluate_expression(exp: &Expression, variables: &Vec<Variable>) -> Result<Object, String> {
     match exp {
+        Expression::Identifier(ident) => {
+            let value = get_value_from_variables(ident.value.clone(), &variables)?;
+            Ok(value)
+        }
         Expression::If(if_exp) => {
-            let cond = evaluate_expression(&if_exp.condition)?;
+            let cond = evaluate_expression(&if_exp.condition, &variables)?;
             if is_obj_truthy(cond) {
-                return evaluate_block_statement(&if_exp.consequence.statements);
+                return evaluate_block_statement(&if_exp.consequence.statements, variables);
             } else {
                 if let Some(alternative) = &if_exp.alternative {
-                    return evaluate_block_statement(&alternative.statements);
+                    return evaluate_block_statement(&alternative.statements, variables);
                 } else {
                     return Ok(Object::new(ObjectType::Null));
                 }
             }
         }
         Expression::PrefixOp(prefix) => {
-            let right = evaluate_expression(&prefix.right)?;
+            let right = evaluate_expression(&prefix.right, &variables)?;
             evaluate_prefix(prefix, right)
         }
         Expression::Int(int) => Ok(make_int(int)),
         Expression::Boolean(boolean) => Ok(make_bool(boolean)),
         Expression::InfixOp(infix) => {
-            let right = evaluate_expression(&infix.right)?;
+            let right = evaluate_expression(&infix.right, &variables)?;
 
-            let left = evaluate_expression(&infix.left)?;
+            let left = evaluate_expression(&infix.left, &variables)?;
             evaluate_infix(&infix.infix_type, left, right)
         }
         _ => Ok(Object::new(ObjectType::Null)),
     }
+}
+
+fn get_value_from_variables(ident: String, variables: &Vec<Variable>) -> Result<Object, String> {
+    for variable in variables {
+        if variable.name == ident {
+            let obj = match &variable.value.obj_type {
+                ObjectType::Int(int) => Object::new(ObjectType::Int(Int { value: int.value })),
+                _ => return Err("Unknown type for identifier".to_string()),
+            };
+            return Ok(obj);
+        }
+    }
+    Err("Unknown identifier".to_string())
 }
 
 fn is_obj_truthy(obj: Object) -> bool {
@@ -485,6 +523,7 @@ return 1;
 }",
                 "unknown operator: BOOLEAN + BOOLEAN",
             ),
+            ("let a = 5; b;", "Unknown identifier"),
         ];
         for (test, expected) in tests {
             let result = test_eval_with_error(test);
@@ -501,5 +540,22 @@ return 1;
         let mut parser = Parser::new(lexer);
         let prog = parser.parse_program().expect("Expect a program");
         eval_program(&prog.statements)
+    }
+
+    #[test]
+    fn it_should_evaluate_let_statement() {
+        let tests = [
+            ("let a = 5; a;", 5),
+            ("let a = 5 * 5; a;", 25),
+            ("let a = 5; let b = 5; b;", 5),
+            ("let a = 5; let b = 5; let c = a + b + 5; c;", 15),
+        ];
+
+        for (input, expected) in tests {
+            let result = test_eval(input);
+            println!("result: {:?}", result);
+            println!("expected: {:?}", expected);
+            assert_int(result, expected)
+        }
     }
 }

@@ -6,6 +6,7 @@ pub enum ObjectType {
     Str(Str),
     Bool(BoolObject),
     Return(Box<Object>),
+    Let(Box<Variable>),
     Null,
 }
 
@@ -16,8 +17,21 @@ impl fmt::Display for ObjectType {
             ObjectType::Str(value) => write!(f, "{}", value),
             ObjectType::Bool(value) => write!(f, "{}", value),
             ObjectType::Return(value) => write!(f, "{}", value),
+            ObjectType::Let(value) => write!(f, "{}", value),
             ObjectType::Null => write!(f, "Null"),
         }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Variable {
+    pub value: Object,
+    pub name: String,
+}
+
+impl fmt::Display for Variable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.value)
     }
 }
 
