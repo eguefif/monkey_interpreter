@@ -198,6 +198,23 @@ pub enum InfixType {
     None,
 }
 
+impl fmt::Display for InfixType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let text = match self {
+            InfixType::Add => "+",
+            InfixType::Sub => "-",
+            InfixType::Mul => "*",
+            InfixType::Div => "/",
+            InfixType::Gt => ">",
+            InfixType::Lt => "<",
+            InfixType::Eq => "=",
+            InfixType::Noteq => "!=",
+            InfixType::None => "",
+        };
+        write!(f, "{text}")
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct InfixExpression {
     pub token: Token,

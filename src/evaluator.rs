@@ -107,7 +107,7 @@ fn is_obj_truthy(obj: Object) -> bool {
 }
 
 fn evaluate_infix(op: &InfixType, left: Object, right: Object) -> Result<Object, String> {
-    match (left.obj_type, right.obj_type) {
+    match (&left.obj_type, &right.obj_type) {
         (ObjectType::Int(left), ObjectType::Int(right)) => {
             return evaluate_infix_int_vs_int(op, left.value, right.value);
         }
@@ -120,7 +120,12 @@ fn evaluate_infix(op: &InfixType, left: Object, right: Object) -> Result<Object,
         (ObjectType::Bool(left), ObjectType::Bool(right)) => {
             return evaluate_infix_bool_vs_bool(op, left.value, right.value);
         }
-        _ => return Ok(Object::new(ObjectType::Null)),
+        _ => {
+            return Err(format!(
+                "type mismatch: cannot do {} {} {}",
+                left.obj_type, op, right.obj_type
+            ))
+        }
     }
 }
 
@@ -137,7 +142,7 @@ fn evaluate_infix_int_vs_int(op: &InfixType, left: i128, right: i128) -> Result<
         }))),
         InfixType::Div => {
             if right == 0 {
-                panic!("Div by 0 is forbidden")
+                return Err("Div by 0 is forbidden".to_string());
             }
             Ok(Object::new(ObjectType::Int(Int {
                 value: left / right,
@@ -155,7 +160,10 @@ fn evaluate_infix_int_vs_int(op: &InfixType, left: i128, right: i128) -> Result<
         InfixType::Noteq => Ok(Object::new(ObjectType::Bool(BoolObject {
             value: left != right,
         }))),
-        InfixType::None => Ok(Object::new(ObjectType::Null)),
+        _ => Err(format!(
+            "type mismatch: cannot do {} {} {}",
+            left, op, right
+        )),
     }
 }
 
@@ -183,7 +191,7 @@ fn evaluate_infix_bool_vs_int(op: &InfixType, left: bool, right: i128) -> Result
                 })))
             }
         }
-        _ => return Ok(Object::new(ObjectType::Null)),
+        _ => Err(format!("type mismatch: cannot do BOOLEAN {} INTEGER", op)),
     }
 }
 
@@ -211,7 +219,7 @@ fn evaluate_infix_int_vs_bool(op: &InfixType, left: i128, right: bool) -> Result
                 })))
             }
         }
-        _ => return Ok(Object::new(ObjectType::Null)),
+        _ => Err(format!("type mismatch: cannot do INTEGER {} BOOLEAN", op)),
     }
 }
 
@@ -225,7 +233,7 @@ fn evaluate_infix_bool_vs_bool(op: &InfixType, left: bool, right: bool) -> Resul
         InfixType::Noteq => Ok(Object::new(ObjectType::Bool(BoolObject {
             value: left != right,
         }))),
-        _ => return Ok(Object::new(ObjectType::Null)),
+        _ => Err(format!("unknown operator: BOOLEAN {} BOOLEAN", op)),
     }
 }
 
@@ -242,6 +250,7 @@ fn evaluate_minus(right: Object) -> Result<Object, String> {
         ObjectType::Int(value) => Ok(Object::new(ObjectType::Int(Int {
             value: -value.value,
         }))),
+        ObjectType::Bool(_) => Err("unknown operator: -BOOLEAN".to_string()),
         _ => Ok(Object::new(ObjectType::Null)),
     }
 }
@@ -457,8 +466,8 @@ return 1;
     #[test]
     fn it_should_handle_error() {
         let tests = [
-            ("5 + true;", "type mismatch: INTEGER + BOOLEAN"),
-            ("5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"),
+            ("5 + true;", "type mismatch: cannot do INTEGER + BOOLEAN"),
+            ("5 + true; 5;", "type mismatch: cannot do INTEGER + BOOLEAN"),
             ("-true", "unknown operator: -BOOLEAN"),
             ("true + false;", "unknown operator: BOOLEAN + BOOLEAN"),
             ("5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"),
