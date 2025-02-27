@@ -148,12 +148,18 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function(&mut self, token: Token) -> Expression {
-        let ident = self.lexer.next().expect("Expect a function identifier");
+        let next_token = self
+            .lexer
+            .next()
+            .expect("Unexpected end of file parsing function");
+        if let TokenType::Ident = next_token.token_type {
+            self.expect_token(TokenType::Lparen);
+        }
         let params = self.parse_function_params();
         self.expect_token(TokenType::Lbrace);
         let block = self.parse_block_statement();
         Expression::Function(FunctionExpression {
-            token: ident,
+            token: next_token,
             params,
             block,
         })
@@ -161,7 +167,6 @@ impl<'a> Parser<'a> {
 
     fn parse_function_params(&mut self) -> Vec<Identifier> {
         let mut retval: Vec<Identifier> = Vec::new();
-        self.expect_token(TokenType::Lparen);
         loop {
             let token = self
                 .lexer
@@ -954,7 +959,7 @@ y;
             return retval;
         }
         ";
-        let expected = "fn my_function(x, y) {
+        let expected = "fn(x, y) {
 let retval = (x + y);
 return retval;
 }
@@ -993,5 +998,23 @@ return retval;
         } else {
             panic!("not a StatementExpression");
         }
+    }
+
+    #[test]
+    fn it_should_parse_closure() {
+        let input = "fn(x, y) {
+            let retval = x + y;
+            return retval;
+        }
+        ";
+        let expected = "fn(x, y) {
+let retval = (x + y);
+return retval;
+}
+";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        assert_eq!(format!("{}", program), expected)
     }
 }

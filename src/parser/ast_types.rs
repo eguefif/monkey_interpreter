@@ -349,11 +349,7 @@ impl fmt::Display for FunctionExpression {
                 params.push_str(format!("{}, ", param.token.litteral).as_str());
             }
         }
-        write!(
-            f,
-            "fn {}({}) {{\n{}\n}}",
-            self.token.litteral, params, self.block
-        )
+        write!(f, "fn({}) {{\n{}\n}}", params, self.block)
     }
 }
 
