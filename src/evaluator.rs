@@ -320,7 +320,10 @@ fn make_bool(boolean: &Bool) -> Object {
 
 #[cfg(test)]
 mod tests {
-    use crate::{parser::Parser, tokenizer::lexer::Lexer};
+    use crate::{
+        parser::{ast_types::BlockStatement, Parser},
+        tokenizer::lexer::Lexer,
+    };
 
     use super::*;
 
@@ -553,8 +556,17 @@ return 1;
     fn it_should_test_function() {
         let input = "fn(x) { x + 2; };";
         let result = test_eval(input);
-        //if let ObjectType::Func
-        println!("result");
-        panic!()
+        if let ObjectType::Function(value) = result.obj_type {
+            assert_eq!(value.params.len(), 1);
+            assert_eq!(value.params[0].value, "x");
+            expect_body(value.body, "(x + 2)");
+        } else {
+            panic!("Not a function object")
+        }
+    }
+
+    fn expect_body(body: BlockStatement, expected: &str) {
+        let body_str = format!("{body}");
+        assert_eq!(body_str, expected);
     }
 }

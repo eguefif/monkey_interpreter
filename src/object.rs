@@ -119,9 +119,9 @@ impl fmt::Display for BoolObject {
 
 #[derive(Debug, PartialEq)]
 pub struct Func {
-    params: Vec<Identifier>,
-    body: BlockStatement,
-    env: Environment,
+    pub params: Vec<Identifier>,
+    pub body: BlockStatement,
+    pub env: Environment,
 }
 
 impl fmt::Display for Func {
