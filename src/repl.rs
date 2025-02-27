@@ -22,7 +22,6 @@ fn main() -> io::Result<()> {
             Ok(output) => println!("{}", output),
             Err(output) => println!("{}", output),
         }
-        println!("Env: {:?}", env);
         buffer.clear();
     }
     Ok(())

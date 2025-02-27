@@ -1,5 +1,10 @@
 use std::fmt;
 
+use crate::{
+    environment::Environment,
+    parser::ast_types::{BlockStatement, Identifier},
+};
+
 #[derive(Debug, PartialEq)]
 pub enum ObjectType {
     Int(Int),
@@ -7,6 +12,7 @@ pub enum ObjectType {
     Bool(BoolObject),
     Return(Box<Object>),
     Let(Box<Variable>),
+    Function(Func),
     Null,
 }
 
@@ -18,6 +24,7 @@ impl fmt::Display for ObjectType {
             ObjectType::Bool(value) => write!(f, "{}", value),
             ObjectType::Return(value) => write!(f, "{}", value),
             ObjectType::Let(value) => write!(f, "{}", value),
+            ObjectType::Function(value) => write!(f, "{}", value),
             ObjectType::Null => write!(f, "Null"),
         }
     }
@@ -110,13 +117,23 @@ impl fmt::Display for BoolObject {
     }
 }
 
-/*
 #[derive(Debug, PartialEq)]
-pub struct Null {}
+pub struct Func {
+    params: Vec<Identifier>,
+    body: BlockStatement,
+    env: Environment,
+}
 
-impl fmt::Display for Null {
+impl fmt::Display for Func {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Null")
+        let mut params = String::new();
+        for (i, param) in self.params.iter().enumerate() {
+            if i == self.params.len() - 1 {
+                params.push_str(format!("{}", param.token.litteral).as_str());
+            } else {
+                params.push_str(format!("{}, ", param.token.litteral).as_str());
+            }
+        }
+        write!(f, "fn ({}) {{\n{}\n}}", params, self.body)
     }
 }
-*/

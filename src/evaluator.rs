@@ -548,4 +548,13 @@ return 1;
             assert_int(result, expected)
         }
     }
+
+    #[test]
+    fn it_should_test_function() {
+        let input = "fn(x) { x + 2; };";
+        let result = test_eval(input);
+        //if let ObjectType::Func
+        println!("result");
+        panic!()
+    }
 }
