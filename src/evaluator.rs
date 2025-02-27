@@ -1,4 +1,5 @@
-// Todo: refactor into a struct to keep a mutable vec of identifiers ?
+use crate::environment::Environment;
+
 use crate::{
     object::{BoolObject, Int, Object, ObjectType, Variable},
     parser::ast_types::{
@@ -10,12 +11,12 @@ use crate::{
 pub fn eval_program(statements: &Vec<Statement>) -> Result<Object, String> {
     let null = Object::new(ObjectType::Null);
     let mut retval = Object::new(ObjectType::Return(Box::new(null)));
-    let mut variables: Vec<Variable> = Vec::new();
+    let mut env = Environment::new();
     for statement in statements {
-        retval = evaluate(statement, &variables)?;
+        retval = evaluate(statement, &mut env)?;
         retval = match retval.obj_type {
             ObjectType::Let(value) => {
-                variables.push(*value);
+                env.push(*value);
                 Object::new(ObjectType::Null)
             }
             ObjectType::Return(value) => return Ok(*value),
@@ -25,17 +26,17 @@ pub fn eval_program(statements: &Vec<Statement>) -> Result<Object, String> {
     Ok(retval)
 }
 
-fn evaluate(statement: &Statement, variables: &Vec<Variable>) -> Result<Object, String> {
+fn evaluate(statement: &Statement, env: &mut Environment) -> Result<Object, String> {
     let retval = match statement {
-        Statement::Expression(exp) => evaluate_expression(&exp.expression, variables),
-        Statement::Return(exp) => evaluate_return(&exp, variables),
-        Statement::Let(exp) => evaluate_let(&exp, variables),
+        Statement::Expression(exp) => evaluate_expression(&exp.expression, env),
+        Statement::Return(exp) => evaluate_return(&exp, env),
+        Statement::Let(exp) => evaluate_let(&exp, env),
     };
     retval
 }
 
-fn evaluate_let(exp: &LetStatement, variables: &Vec<Variable>) -> Result<Object, String> {
-    let value = evaluate_expression(&exp.value, variables)?;
+fn evaluate_let(exp: &LetStatement, env: &mut Environment) -> Result<Object, String> {
+    let value = evaluate_expression(&exp.value, env)?;
     let var = Variable {
         value,
         name: exp.identifier.value.clone(),
@@ -45,12 +46,12 @@ fn evaluate_let(exp: &LetStatement, variables: &Vec<Variable>) -> Result<Object,
 
 fn evaluate_block_statement(
     statements: &Vec<Statement>,
-    variables: &Vec<Variable>,
+    env: &mut Environment,
 ) -> Result<Object, String> {
     let null = Object::new(ObjectType::Null);
     let mut retval = Object::new(ObjectType::Return(Box::new(null)));
     for statement in statements {
-        retval = evaluate(statement, variables)?;
+        retval = evaluate(statement, env)?;
 
         retval = match retval.obj_type {
             ObjectType::Return(_) => return Ok(retval),
@@ -60,9 +61,9 @@ fn evaluate_block_statement(
     Ok(retval)
 }
 
-fn evaluate_return(exp: &ReturnStatement, variables: &Vec<Variable>) -> Result<Object, String> {
+fn evaluate_return(exp: &ReturnStatement, env: &mut Environment) -> Result<Object, String> {
     if let Some(retval) = &exp.return_value {
-        let obj = evaluate_expression(&retval, variables)?;
+        let obj = evaluate_expression(&retval, env)?;
         Ok(Object::new(ObjectType::Return(Box::new(obj))))
     } else {
         let null = Object::new(ObjectType::Null);
@@ -70,51 +71,38 @@ fn evaluate_return(exp: &ReturnStatement, variables: &Vec<Variable>) -> Result<O
     }
 }
 
-fn evaluate_expression(exp: &Expression, variables: &Vec<Variable>) -> Result<Object, String> {
+fn evaluate_expression(exp: &Expression, env: &mut Environment) -> Result<Object, String> {
     match exp {
         Expression::Identifier(ident) => {
-            let value = get_value_from_variables(ident.value.clone(), &variables)?;
+            let value = env.get_variable(&ident.value)?;
             Ok(value)
         }
         Expression::If(if_exp) => {
-            let cond = evaluate_expression(&if_exp.condition, &variables)?;
+            let cond = evaluate_expression(&if_exp.condition, env)?;
             if is_obj_truthy(cond) {
-                return evaluate_block_statement(&if_exp.consequence.statements, variables);
+                return evaluate_block_statement(&if_exp.consequence.statements, env);
             } else {
                 if let Some(alternative) = &if_exp.alternative {
-                    return evaluate_block_statement(&alternative.statements, variables);
+                    return evaluate_block_statement(&alternative.statements, env);
                 } else {
                     return Ok(Object::new(ObjectType::Null));
                 }
             }
         }
         Expression::PrefixOp(prefix) => {
-            let right = evaluate_expression(&prefix.right, &variables)?;
+            let right = evaluate_expression(&prefix.right, env)?;
             evaluate_prefix(prefix, right)
         }
         Expression::Int(int) => Ok(make_int(int)),
         Expression::Boolean(boolean) => Ok(make_bool(boolean)),
         Expression::InfixOp(infix) => {
-            let right = evaluate_expression(&infix.right, &variables)?;
+            let right = evaluate_expression(&infix.right, env)?;
 
-            let left = evaluate_expression(&infix.left, &variables)?;
+            let left = evaluate_expression(&infix.left, env)?;
             evaluate_infix(&infix.infix_type, left, right)
         }
         _ => Ok(Object::new(ObjectType::Null)),
     }
-}
-
-fn get_value_from_variables(ident: String, variables: &Vec<Variable>) -> Result<Object, String> {
-    for variable in variables {
-        if variable.name == ident {
-            let obj = match &variable.value.obj_type {
-                ObjectType::Int(int) => Object::new(ObjectType::Int(Int { value: int.value })),
-                _ => return Err("Unknown type for identifier".to_string()),
-            };
-            return Ok(obj);
-        }
-    }
-    Err("Unknown identifier".to_string())
 }
 
 fn is_obj_truthy(obj: Object) -> bool {

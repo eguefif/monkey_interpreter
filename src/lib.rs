@@ -4,6 +4,7 @@ use crate::parser::Parser;
 use crate::tokenizer::lexer::Lexer;
 use std::fs;
 
+pub mod environment;
 pub mod evaluator;
 pub mod object;
 pub mod parser;

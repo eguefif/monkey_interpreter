@@ -46,6 +46,29 @@ impl Object {
         let inspect = format!("{obj_type}");
         Self { obj_type, inspect }
     }
+
+    pub fn new_from(obj: &Object) -> Self {
+        match &obj.obj_type {
+            ObjectType::Int(value) => Self {
+                inspect: obj.inspect.clone(),
+                obj_type: ObjectType::Int(Int { value: value.value }),
+            },
+            ObjectType::Str(value) => Self {
+                inspect: obj.inspect.clone(),
+                obj_type: ObjectType::Str(Str {
+                    value: value.value.clone(),
+                }),
+            },
+            ObjectType::Bool(value) => Self {
+                inspect: obj.inspect.clone(),
+                obj_type: ObjectType::Bool(BoolObject { value: value.value }),
+            },
+            _ => Self {
+                inspect: "null".to_string(),
+                obj_type: ObjectType::Null,
+            },
+        }
+    }
 }
 
 impl fmt::Display for Object {
