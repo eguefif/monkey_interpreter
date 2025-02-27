@@ -8,16 +8,16 @@ use crate::{
     },
 };
 
-pub fn eval_program(statements: &Vec<Statement>) -> Result<Object, String> {
+pub fn eval_program(statements: &Vec<Statement>, env: &mut Environment) -> Result<Object, String> {
     let null = Object::new(ObjectType::Null);
     let mut retval = Object::new(ObjectType::Return(Box::new(null)));
-    let mut env = Environment::new();
     for statement in statements {
-        retval = evaluate(statement, &mut env)?;
+        retval = evaluate(statement, env)?;
         retval = match retval.obj_type {
             ObjectType::Let(value) => {
+                let name = value.name.clone();
                 env.push(*value);
-                Object::new(ObjectType::Null)
+                env.get_variable(&name)?
             }
             ObjectType::Return(value) => return Ok(*value),
             _ => retval,
@@ -334,10 +334,11 @@ mod tests {
     }
 
     fn test_eval(input: &str) -> Object {
+        let mut env = Environment::new();
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let prog = parser.parse_program().expect("Expect a program");
-        eval_program(&prog.statements).expect("Should be a OK result")
+        eval_program(&prog.statements, &mut env).expect("Should be a OK result")
     }
 
     fn assert_int(obj: Object, expected: i128) {
@@ -524,10 +525,11 @@ return 1;
     }
 
     fn test_eval_with_error(input: &str) -> Result<Object, String> {
+        let mut env = Environment::new();
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let prog = parser.parse_program().expect("Expect a program");
-        eval_program(&prog.statements)
+        eval_program(&prog.statements, &mut env)
     }
 
     #[test]

@@ -1,6 +1,7 @@
 use crate::object::{Object, Variable};
 use std::collections::HashMap;
 
+#[derive(Debug, PartialEq)]
 pub struct Environment {
     pub variables: HashMap<String, Object>,
 }
