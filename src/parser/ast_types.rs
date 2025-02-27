@@ -39,7 +39,7 @@ pub enum Precedence {
     Call,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
@@ -56,7 +56,7 @@ impl fmt::Display for Statement {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct LetStatement {
     pub token: Token,
     pub identifier: Identifier,
@@ -69,7 +69,7 @@ impl fmt::Display for LetStatement {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ReturnStatement {
     pub token: Token,
     pub return_value: Option<Expression>,
@@ -84,7 +84,7 @@ impl fmt::Display for ReturnStatement {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Identifier(Identifier),
     Int(Integer),
@@ -113,7 +113,7 @@ impl fmt::Display for Expression {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Identifier {
     pub token: Token,
     pub value: String,
@@ -131,7 +131,7 @@ impl Identifier {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ExpressionStatement {
     pub token: Token,
     pub expression: Expression,
@@ -147,7 +147,7 @@ impl fmt::Display for ExpressionStatement {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Integer {
     pub token: Token,
     pub value: i128,
@@ -159,7 +159,7 @@ impl fmt::Display for Integer {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PrefixType {
     Minus,
     Bang,
@@ -172,7 +172,7 @@ pub enum PrefixType {
     Lt,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct PrefixExpression {
     pub token: Token,
     pub prefix_type: PrefixType,
@@ -185,7 +185,7 @@ impl fmt::Display for PrefixExpression {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum InfixType {
     Add,
     Sub,
@@ -215,7 +215,7 @@ impl fmt::Display for InfixType {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct InfixExpression {
     pub token: Token,
     pub infix_type: InfixType,
@@ -258,7 +258,7 @@ fn get_infix_type(token: &TokenType) -> InfixType {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Bool {
     pub token: Token,
     pub value: bool,
@@ -281,7 +281,7 @@ impl Bool {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IfExpression {
     pub token: Token,
     pub condition: Box<Expression>,
@@ -303,7 +303,7 @@ impl fmt::Display for IfExpression {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockStatement {
     pub statements: Vec<Statement>,
 }
@@ -332,11 +332,37 @@ impl fmt::Display for BlockStatement {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct FunctionExpression {
     pub token: Token,
     pub params: Vec<Identifier>,
     pub block: BlockStatement,
+}
+
+impl FunctionExpression {
+    pub fn copy_params(&self) -> Vec<Identifier> {
+        let mut retval: Vec<Identifier> = Vec::new();
+        for param in self.params.iter() {
+            let ident = Identifier {
+                token: Token {
+                    token_type: param.token.token_type.clone(),
+                    litteral: param.token.litteral.clone(),
+                },
+                value: param.value.clone(),
+            };
+            retval.push(ident);
+        }
+        retval
+    }
+
+    pub fn copy_block(&self) -> BlockStatement {
+        let mut statements: Vec<Statement> = Vec::new();
+
+        for statement in self.block.statements.iter() {
+            statements.push(statement.clone());
+        }
+        BlockStatement { statements }
+    }
 }
 
 impl fmt::Display for FunctionExpression {
@@ -353,7 +379,7 @@ impl fmt::Display for FunctionExpression {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct CallExpression {
     pub token: Token,
     pub function: Box<Expression>,

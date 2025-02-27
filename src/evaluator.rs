@@ -1,5 +1,7 @@
 use crate::environment::Environment;
 
+use crate::object::Func;
+use crate::parser::ast_types::FunctionExpression;
 use crate::{
     object::{BoolObject, Int, Object, ObjectType, Variable},
     parser::ast_types::{
@@ -73,6 +75,7 @@ fn evaluate_return(exp: &ReturnStatement, env: &mut Environment) -> Result<Objec
 
 fn evaluate_expression(exp: &Expression, env: &mut Environment) -> Result<Object, String> {
     match exp {
+        Expression::Function(func) => parse_function(func, env),
         Expression::Identifier(ident) => {
             let value = env.get_variable(&ident.value)?;
             Ok(value)
@@ -103,6 +106,16 @@ fn evaluate_expression(exp: &Expression, env: &mut Environment) -> Result<Object
         }
         _ => Ok(Object::new(ObjectType::Null)),
     }
+}
+
+fn parse_function(func: &FunctionExpression, env: &mut Environment) -> Result<Object, String> {
+    let params = func.copy_params();
+    let block = func.copy_block();
+    Ok(Object::new(ObjectType::Function(Func {
+        params: params,
+        body: block,
+        env: Environment::new(),
+    })))
 }
 
 fn is_obj_truthy(obj: Object) -> bool {
@@ -559,7 +572,7 @@ return 1;
         if let ObjectType::Function(value) = result.obj_type {
             assert_eq!(value.params.len(), 1);
             assert_eq!(value.params[0].value, "x");
-            expect_body(value.body, "(x + 2)");
+            expect_body(value.body, "(x + 2);\n");
         } else {
             panic!("Not a function object")
         }
