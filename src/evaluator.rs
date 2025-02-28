@@ -75,7 +75,7 @@ fn evaluate_return(exp: &ReturnStatement, env: &mut Environment) -> Result<Objec
 
 fn evaluate_expression(exp: &Expression, env: &mut Environment) -> Result<Object, String> {
     match exp {
-        Expression::Function(func) => parse_function(func, env),
+        Expression::Function(func) => evaluate_function(func, env),
         Expression::Identifier(ident) => {
             let value = env.get_variable(&ident.value)?;
             Ok(value)
@@ -108,7 +108,7 @@ fn evaluate_expression(exp: &Expression, env: &mut Environment) -> Result<Object
     }
 }
 
-fn parse_function(func: &FunctionExpression, env: &mut Environment) -> Result<Object, String> {
+fn evaluate_function(func: &FunctionExpression, env: &mut Environment) -> Result<Object, String> {
     let params = func.copy_params();
     let block = func.copy_block();
     Ok(Object::new(ObjectType::Function(Func {
@@ -581,5 +581,28 @@ return 1;
     fn expect_body(body: BlockStatement, expected: &str) {
         let body_str = format!("{body}");
         assert_eq!(body_str, expected);
+    }
+
+    #[test]
+    fn it_should_test_function_calls() {
+        let tests = [
+            ("let identity = fn(x) { x; };identity(5);", 5),
+            ("let identity = fn(x) { return x; };identity(5);", 5),
+            ("let double = fn(x) { x * 2; };double(5);", 10),
+            ("let add = fn(x, y) { x + y; };identity(5, 6);", 11),
+            (
+                "let add = fn(x, y) { x + y; };identity(5 + 5, add(5, 5);",
+                20,
+            ),
+            ("fn(x) { x }(5)", 5),
+        ];
+        for (input, expected) in tests {
+            let result = test_eval(input);
+            if let ObjectType::Int(value) = result.obj_type {
+                assert_eq!(value.value, expected);
+            } else {
+                panic!("Not a function object")
+            }
+        }
     }
 }
