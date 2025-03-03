@@ -1,4 +1,6 @@
+use std::cell::RefCell;
 use std::fmt;
+use std::rc::Rc;
 
 use crate::{
     environment::Environment,
@@ -121,7 +123,7 @@ impl fmt::Display for BoolObject {
 pub struct Func {
     pub params: Vec<Identifier>,
     pub body: BlockStatement,
-    pub env: Environment,
+    pub env: Rc<RefCell<Environment>>,
 }
 
 impl fmt::Display for Func {
