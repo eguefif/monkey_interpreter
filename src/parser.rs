@@ -1017,4 +1017,19 @@ return retval;
         let program: Program = parser.parse_program().unwrap();
         assert_eq!(format!("{}", program), expected)
     }
+
+    #[test]
+    fn it_should_parse_string() {
+        let input = "let x = \"Hello, World\"";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        assert_eq!(format!("{}", program), input);
+        let statement = program.statements[0].clone();
+        if let Statement::Let(var) = statement {
+            if let Expression::Str(value) = var.value {
+                assert_eq!(value.value, "Hello, World")
+            }
+        }
+    }
 }

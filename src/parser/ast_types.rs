@@ -88,6 +88,7 @@ impl fmt::Display for ReturnStatement {
 pub enum Expression {
     Identifier(Identifier),
     Int(Integer),
+    Str(Str),
     Boolean(Bool),
     PrefixOp(PrefixExpression),
     InfixOp(InfixExpression),
@@ -154,6 +155,18 @@ pub struct Integer {
 }
 
 impl fmt::Display for Integer {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Str {
+    pub token: Token,
+    pub value: String,
+}
+
+impl fmt::Display for Str {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.value)
     }
