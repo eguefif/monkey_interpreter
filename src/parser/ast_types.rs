@@ -101,6 +101,7 @@ pub enum Expression {
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Expression::Str(value) => write!(f, "{}", value),
             Expression::Identifier(value) => write!(f, "{}", value),
             Expression::Int(value) => write!(f, "{}", value),
             Expression::PrefixOp(value) => write!(f, "{}", value),
@@ -168,7 +169,7 @@ pub struct Str {
 
 impl fmt::Display for Str {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.value)
+        write!(f, "\"{}\"", self.value)
     }
 }
 

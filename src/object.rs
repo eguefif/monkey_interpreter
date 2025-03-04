@@ -1,11 +1,6 @@
-//use std::cell::RefCell;
 use std::fmt;
-//use std::rc::Rc;
 
-use crate::{
-    //environment::Environment,
-    parser::ast_types::{BlockStatement, Identifier},
-};
+use crate::parser::ast_types::{BlockStatement, Identifier};
 
 #[derive(Debug, PartialEq)]
 pub enum ObjectType {
