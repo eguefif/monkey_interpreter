@@ -1,4 +1,3 @@
-// TODO: make the example p 161 works
 use std::cell::RefCell;
 use std::iter::zip;
 use std::rc::Rc;
@@ -685,6 +684,22 @@ use_a(5);
         let result = test_eval(input);
         if let ObjectType::Str(value) = result.obj_type {
             assert_eq!(value.value, "Hello, World!");
+        } else {
+            panic!("Not a string {:?}", result);
+        }
+    }
+
+    #[test]
+    fn it_should_evaluate_nested_closure() {
+        let input = "
+let makeGreeter = fn(greeting) { fn(name) { greeting + \" \" + name + \"!\" } };
+let hello = makeGreeter(\"Hello\");
+hello(\"Emmanuel\");
+
+        ";
+        let result = test_eval(input);
+        if let ObjectType::Str(value) = result.obj_type {
+            assert_eq!(value.value, "Hello Emmanuel!");
         } else {
             panic!("Not a string {:?}", result);
         }
