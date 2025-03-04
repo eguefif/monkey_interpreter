@@ -39,6 +39,12 @@ impl Environment {
             let obj = Object::new_from(value);
             return Ok(obj);
         } else {
+            if let Some(ref outer) = self.outer {
+                if let Ok(value) = outer.borrow().get_variable(name) {
+                    let obj = Object::new_from(&value);
+                    return Ok(obj);
+                }
+            }
             Err(format!("Unknown identifier: {name}"))
         }
     }

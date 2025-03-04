@@ -566,7 +566,7 @@ return 1;
 }",
                 "unknown operator: BOOLEAN + BOOLEAN",
             ),
-            ("let a = 5; b;", "Unknown identifier"),
+            ("let a = 5; b;", "Unknown identifier: b"),
         ];
         for (test, expected) in tests {
             let result = test_eval_with_error(test);
@@ -634,11 +634,25 @@ return 1;
         for (input, expected) in tests {
             let result = test_eval(input);
             if let ObjectType::Int(value) = result.obj_type {
-                println!("{} {}", value.value, expected);
                 assert_eq!(value.value, expected);
             } else {
                 panic!("Not a a INT: {:?}", result)
             }
+        }
+    }
+
+    #[test]
+    fn it_should_evaluate_a_prgram() {
+        let input = "
+let a = 15;
+let use_a = fn(x) { x == a};
+use_a(5);
+        ";
+        let result = test_eval(input);
+        if let ObjectType::Bool(value) = result.obj_type {
+            assert!(!value.value);
+        } else {
+            panic!("Not a bool {:?}", result);
         }
     }
 }
