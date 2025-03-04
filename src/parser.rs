@@ -1,6 +1,6 @@
 use ast_types::{
     BlockStatement, Bool, CallExpression, FunctionExpression, IfExpression, InfixExpression,
-    Integer, PrefixExpression, PrefixType,
+    Integer, PrefixExpression, PrefixType, Str,
 };
 
 use crate::parser::ast_types::{
@@ -122,7 +122,9 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, token: Token, precedence: Precedence) -> Expression {
-        let prefix = match token.token_type {
+        let token_type = token.token_type.clone();
+        let prefix = match token_type {
+            TokenType::Str(value) => self.parse_string(token, value.to_string()),
             TokenType::Ident => self.parse_identifier(token),
             TokenType::Int(value) => self.parse_number(token, value),
             TokenType::Bang => self.parse_bang(token),
@@ -267,8 +269,13 @@ impl<'a> Parser<'a> {
             token: token,
         })
     }
+
     fn parse_number(&mut self, token: Token, value: i128) -> Expression {
         Expression::Int(Integer { value, token })
+    }
+
+    fn parse_string(&mut self, token: Token, value: String) -> Expression {
+        Expression::Str(Str { value, token })
     }
 
     fn parse_bang(&mut self, token: Token) -> Expression {
@@ -1016,5 +1023,20 @@ return retval;
         let mut parser = Parser::new(lexer);
         let program: Program = parser.parse_program().unwrap();
         assert_eq!(format!("{}", program), expected)
+    }
+
+    #[test]
+    fn it_should_parse_string() {
+        let input = "let x = \"Hello, World\"";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        assert_eq!(format!("{}", program), format!("{input};\n"));
+        let statement = program.statements[0].clone();
+        if let Statement::Let(var) = statement {
+            if let Expression::Str(value) = var.value {
+                assert_eq!(value.value, "Hello, World")
+            }
+        }
     }
 }
