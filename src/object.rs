@@ -1,9 +1,9 @@
-use std::cell::RefCell;
+//use std::cell::RefCell;
 use std::fmt;
-use std::rc::Rc;
+//use std::rc::Rc;
 
 use crate::{
-    environment::Environment,
+    //environment::Environment,
     parser::ast_types::{BlockStatement, Identifier},
 };
 
@@ -72,6 +72,19 @@ impl Object {
                 inspect: obj.inspect.clone(),
                 obj_type: ObjectType::Bool(BoolObject { value: value.value }),
             },
+            ObjectType::Function(value) => {
+                let mut new_params: Vec<Identifier> = Vec::new();
+                for param in value.params.iter() {
+                    new_params.push(param.clone());
+                }
+                Self {
+                    inspect: obj.inspect.clone(),
+                    obj_type: ObjectType::Function(Func {
+                        params: new_params,
+                        body: value.body.clone(),
+                    }),
+                }
+            }
             _ => Self {
                 inspect: "null".to_string(),
                 obj_type: ObjectType::Null,
@@ -123,7 +136,6 @@ impl fmt::Display for BoolObject {
 pub struct Func {
     pub params: Vec<Identifier>,
     pub body: BlockStatement,
-    pub env: Rc<RefCell<Environment>>,
 }
 
 impl fmt::Display for Func {

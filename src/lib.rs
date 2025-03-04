@@ -20,7 +20,7 @@ pub fn interpret(filename: String, env: Rc<RefCell<Environment>>) {
     let mut parser = Parser::new(lexer);
     let ast = parser.parse_program();
     if let Some(program) = ast {
-        match eval_program(&program.statements, env) {
+        match eval_program(&program.statements, env.clone()) {
             Ok(output) => println!("{}", output),
             Err(output) => println!("{}", output),
         }

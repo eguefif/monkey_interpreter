@@ -1,9 +1,10 @@
 use std::cell::RefCell;
+use std::iter::zip;
 use std::rc::Rc;
 
 use crate::environment::Environment;
 use crate::object::Func;
-use crate::parser::ast_types::FunctionExpression;
+use crate::parser::ast_types::{CallExpression, FunctionExpression};
 use crate::{
     object::{BoolObject, Int, Object, ObjectType, Variable},
     parser::ast_types::{
@@ -19,10 +20,9 @@ pub fn eval_program(
     let null = Object::new(ObjectType::Null);
     let mut retval = Object::new(ObjectType::Return(Box::new(null)));
     for statement in statements {
-        retval = evaluate(statement, &env)?;
+        retval = evaluate(statement, env.clone())?;
         retval = match retval.obj_type {
             ObjectType::Let(value) => {
-                let name = &value.name;
                 env.borrow_mut().push(*value);
                 Object::new(ObjectType::Null)
             }
@@ -33,17 +33,17 @@ pub fn eval_program(
     Ok(retval)
 }
 
-fn evaluate(statement: &Statement, env: &Rc<RefCell<Environment>>) -> Result<Object, String> {
+fn evaluate(statement: &Statement, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
     let retval = match statement {
-        Statement::Expression(exp) => evaluate_expression(&exp.expression, env),
-        Statement::Return(exp) => evaluate_return(&exp, env),
-        Statement::Let(exp) => evaluate_let(&exp, env),
+        Statement::Expression(exp) => evaluate_expression(&exp.expression, env.clone()),
+        Statement::Return(exp) => evaluate_return(&exp, env.clone()),
+        Statement::Let(exp) => evaluate_let(&exp, env.clone()),
     };
     retval
 }
 
-fn evaluate_let(exp: &LetStatement, env: &Rc<RefCell<Environment>>) -> Result<Object, String> {
-    let value = evaluate_expression(&exp.value, env)?;
+fn evaluate_let(exp: &LetStatement, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
+    let value = evaluate_expression(&exp.value, env.clone())?;
     let var = Variable {
         value,
         name: exp.identifier.value.clone(),
@@ -53,12 +53,12 @@ fn evaluate_let(exp: &LetStatement, env: &Rc<RefCell<Environment>>) -> Result<Ob
 
 fn evaluate_block_statement(
     statements: &Vec<Statement>,
-    env: &Rc<RefCell<Environment>>,
+    env: Rc<RefCell<Environment>>,
 ) -> Result<Object, String> {
     let null = Object::new(ObjectType::Null);
     let mut retval = Object::new(ObjectType::Return(Box::new(null)));
     for statement in statements {
-        retval = evaluate(statement, env)?;
+        retval = evaluate(statement, env.clone())?;
 
         retval = match retval.obj_type {
             ObjectType::Return(_) => return Ok(retval),
@@ -68,12 +68,9 @@ fn evaluate_block_statement(
     Ok(retval)
 }
 
-fn evaluate_return(
-    exp: &ReturnStatement,
-    env: &Rc<RefCell<Environment>>,
-) -> Result<Object, String> {
+fn evaluate_return(exp: &ReturnStatement, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
     if let Some(retval) = &exp.return_value {
-        let obj = evaluate_expression(&retval, env)?;
+        let obj = evaluate_expression(&retval, env.clone())?;
         Ok(Object::new(ObjectType::Return(Box::new(obj))))
     } else {
         let null = Object::new(ObjectType::Null);
@@ -81,20 +78,22 @@ fn evaluate_return(
     }
 }
 
-fn evaluate_expression(exp: &Expression, env: &Rc<RefCell<Environment>>) -> Result<Object, String> {
-    match exp {
-        Expression::Function(func) => evaluate_function(func, env),
+fn evaluate_expression(exp: &Expression, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
+    let _ = env.borrow().get_variable("identity");
+    let retval = match exp {
+        Expression::CallExpression(call) => evaluate_call(call, env.clone()),
+        Expression::Function(func) => evaluate_function(func, env.clone()),
         Expression::Identifier(ident) => {
             let value = env.borrow().get_variable(&ident.value)?;
             Ok(value)
         }
         Expression::If(if_exp) => {
-            let cond = evaluate_expression(&if_exp.condition, env)?;
+            let cond = evaluate_expression(&if_exp.condition, env.clone())?;
             if is_obj_truthy(cond) {
-                return evaluate_block_statement(&if_exp.consequence.statements, env);
+                return evaluate_block_statement(&if_exp.consequence.statements, env.clone());
             } else {
                 if let Some(alternative) = &if_exp.alternative {
-                    return evaluate_block_statement(&alternative.statements, env);
+                    return evaluate_block_statement(&alternative.statements, env.clone());
                 } else {
                     return Ok(Object::new(ObjectType::Null));
                 }
@@ -107,25 +106,50 @@ fn evaluate_expression(exp: &Expression, env: &Rc<RefCell<Environment>>) -> Resu
         Expression::Int(int) => Ok(make_int(int)),
         Expression::Boolean(boolean) => Ok(make_bool(boolean)),
         Expression::InfixOp(infix) => {
-            let right = evaluate_expression(&infix.right, env)?;
+            let right = evaluate_expression(&infix.right, env.clone())?;
 
-            let left = evaluate_expression(&infix.left, env)?;
+            let left = evaluate_expression(&infix.left, env.clone())?;
             evaluate_infix(&infix.infix_type, left, right)
         }
         _ => Ok(Object::new(ObjectType::Null)),
+    };
+
+    retval
+}
+
+fn evaluate_call(call: &CallExpression, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
+    let mut arg_values: Vec<Object> = Vec::new();
+    for exp in call.args.iter() {
+        arg_values.push(evaluate_expression(&exp, env.clone())?);
+    }
+    let func = evaluate_expression(&call.function, env.clone())?;
+    if let ObjectType::Function(func) = func.obj_type {
+        let mut new_env = Environment::from_env(env);
+        for (name, obj) in zip(func.params, arg_values) {
+            let var = Variable {
+                value: obj,
+                name: name.value,
+            };
+            new_env.push(var);
+        }
+        evaluate_block_statement(&func.body.statements, Rc::new(RefCell::new(new_env)))
+    } else {
+        Err(format!(
+            "Error while evaluating function got instead: \n{func:?}"
+        ))
     }
 }
 
 fn evaluate_function(
     func: &FunctionExpression,
-    env: &Rc<RefCell<Environment>>,
+    env: Rc<RefCell<Environment>>,
 ) -> Result<Object, String> {
     let params = func.copy_params();
     let block = func.copy_block();
     Ok(Object::new(ObjectType::Function(Func {
         params: params,
         body: block,
-        env: env.clone(),
+        //env: env.clone(),
     })))
 }
 
@@ -365,7 +389,10 @@ mod tests {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let prog = parser.parse_program().expect("Expect a program");
-        eval_program(&prog.statements, env).expect("Should be a OK result")
+        match eval_program(&prog.statements, env.clone()) {
+            Ok(obj) => return obj,
+            Err(err) => panic!("Error: {}", err),
+        }
     }
 
     fn assert_int(obj: Object, expected: i128) {
@@ -556,7 +583,7 @@ return 1;
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
         let prog = parser.parse_program().expect("Expect a program");
-        eval_program(&prog.statements, env)
+        eval_program(&prog.statements, env.clone())
     }
 
     #[test]
@@ -600,16 +627,14 @@ return 1;
             ("let identity = fn(x) { x; };identity(5);", 5),
             ("let identity = fn(x) { return x; };identity(5);", 5),
             ("let double = fn(x) { x * 2; };double(5);", 10),
-            ("let add = fn(x, y) { x + y; };identity(5, 6);", 11),
-            (
-                "let add = fn(x, y) { x + y; };identity(5 + 5, add(5, 5);",
-                20,
-            ),
+            ("let add = fn(x, y) { x + y; };add(5, 6);", 11),
+            ("let add = fn(x, y) { x + y; };add(5 + 5, add(5, 5));", 20),
             ("fn(x) { x }(5)", 5),
         ];
         for (input, expected) in tests {
             let result = test_eval(input);
             if let ObjectType::Int(value) = result.obj_type {
+                println!("{} {}", value.value, expected);
                 assert_eq!(value.value, expected);
             } else {
                 panic!("Not a a INT: {:?}", result)
