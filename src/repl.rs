@@ -10,6 +10,11 @@ use std::rc::Rc;
 fn main() -> io::Result<()> {
     let mut buffer = String::new();
     let env = Rc::new(RefCell::new(Environment::new()));
+    println!(
+        "Hello {}, this is Monk, your programming language",
+        get_user()
+    );
+    println!("Feel free to type in commands");
     loop {
         print!(">> ");
         io::stdout().flush()?;
@@ -27,4 +32,13 @@ fn main() -> io::Result<()> {
         buffer.clear();
     }
     Ok(())
+}
+
+fn get_user() -> String {
+    for var in std::env::vars() {
+        if var.0 == "USER" {
+            return var.1;
+        }
+    }
+    return "".to_string();
 }
