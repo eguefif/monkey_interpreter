@@ -1,9 +1,10 @@
+// TODO: make the example p 161 works
 use std::cell::RefCell;
 use std::iter::zip;
 use std::rc::Rc;
 
 use crate::environment::Environment;
-use crate::object::Func;
+use crate::object::{Func, Str};
 use crate::parser::ast_types::{CallExpression, FunctionExpression};
 use crate::{
     object::{BoolObject, Int, Object, ObjectType, Variable},
@@ -104,6 +105,7 @@ fn evaluate_expression(exp: &Expression, env: Rc<RefCell<Environment>>) -> Resul
             evaluate_prefix(prefix, right)
         }
         Expression::Int(int) => Ok(make_int(int)),
+        Expression::Str(str) => Ok(make_str(str.value.clone())),
         Expression::Boolean(boolean) => Ok(make_bool(boolean)),
         Expression::InfixOp(infix) => {
             let right = evaluate_expression(&infix.right, env.clone())?;
@@ -193,6 +195,12 @@ fn evaluate_infix(op: &InfixType, left: Object, right: Object) -> Result<Object,
         }
         (ObjectType::Bool(left), ObjectType::Bool(right)) => {
             return evaluate_infix_bool_vs_bool(op, left.value, right.value);
+        }
+
+        (ObjectType::Str(left), ObjectType::Str(right)) => {
+            return Ok(Object::new(ObjectType::Str(Str {
+                value: format!("{}{}", left.value, right.value),
+            })));
         }
         _ => {
             return Err(format!(
@@ -358,6 +366,10 @@ fn evaluate_bang(right: Object) -> Result<Object, String> {
 
 fn make_int(int: &Integer) -> Object {
     Object::new(ObjectType::Int(Int { value: int.value }))
+}
+
+fn make_str(str: String) -> Object {
+    Object::new(ObjectType::Str(Str { value: str }))
 }
 
 fn make_bool(boolean: &Bool) -> Object {
@@ -653,6 +665,28 @@ use_a(5);
             assert!(!value.value);
         } else {
             panic!("Not a bool {:?}", result);
+        }
+    }
+
+    #[test]
+    fn it_should_evaluate_string() {
+        let input = " let a = \"Hello, World\";a";
+        let result = test_eval(input);
+        if let ObjectType::Str(value) = result.obj_type {
+            assert_eq!(value.value, "Hello, World");
+        } else {
+            panic!("Not a string {:?}", result);
+        }
+    }
+
+    #[test]
+    fn it_should_evaluate_string_concatenation() {
+        let input = "\"Hello, \" + \"World!\"";
+        let result = test_eval(input);
+        if let ObjectType::Str(value) = result.obj_type {
+            assert_eq!(value.value, "Hello, World!");
+        } else {
+            panic!("Not a string {:?}", result);
         }
     }
 }
