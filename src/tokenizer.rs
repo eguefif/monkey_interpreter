@@ -6,6 +6,7 @@ pub enum TokenType {
 
     Ident,
     Int(i128),
+    Str(String),
 
     Assign,
 

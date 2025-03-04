@@ -37,6 +37,22 @@ impl<'a> Lexer<'a> {
                     }
                     return Some(Token::new(TokenType::Assign, next.to_string()));
                 }
+                '"' => {
+                    let mut str = String::with_capacity(50);
+                    loop {
+                        if let Some(peek) = self.iter.peek() {
+                            if *peek == '"' {
+                                self.iter.next();
+                                return Some(Token::new(TokenType::Str(str.clone()), str.clone()));
+                            } else {
+                                let next = self.iter.next().unwrap();
+                                str.push(next);
+                            }
+                        } else {
+                            panic!("Unexpected end of file while parsing string");
+                        }
+                    }
+                }
                 '+' => Some(Token::new(TokenType::Plus, next.to_string())),
                 ';' => Some(Token::new(TokenType::Semicolon, next.to_string())),
                 ',' => Some(Token::new(TokenType::Comma, next.to_string())),
@@ -209,6 +225,8 @@ if (5 < 10) {
 } else {
     return false;
 }
+\"foobar\"
+\"foo bar\"
         "
         .to_string();
         let lexer = Lexer::new(&input);
@@ -280,6 +298,8 @@ if (5 < 10) {
             Token::new(TokenType::False, "false".to_string()),
             Token::new(TokenType::Semicolon, ";".to_string()),
             Token::new(TokenType::Rbrace, "}".to_string()),
+            Token::new(TokenType::Str("foobar".to_string()), "foobar".to_string()),
+            Token::new(TokenType::Str("foo bar".to_string()), "foo bar".to_string()),
         ];
 
         let mut i = 0;
@@ -304,5 +324,24 @@ if (5 < 10) {
         assert_eq!(peek, Some(expected_value.clone()));
         let next = lexer.next();
         assert_eq!(next, Some(expected_value));
+    }
+
+    #[test]
+    fn it_tokenize_string() {
+        let input = "let file = \"Hello, World\"";
+        let mut lexer = Lexer::new(&input);
+
+        let expected_value = Token::new(TokenType::Ident, "file".to_string());
+
+        lexer.next();
+        lexer.next();
+        lexer.next();
+        let result = lexer.next().expect("Expect 4 tokens, get 3");
+        if let TokenType::Str(value) = result.token_type {
+            assert_eq!(value, "Hello, World");
+            assert_eq!(result.litteral, "Hello, World");
+        } else {
+            panic!("Expect a String got {:?}", result);
+        }
     }
 }
