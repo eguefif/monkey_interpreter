@@ -27,6 +27,8 @@ pub enum TokenType {
     Rparen,
     Lbrace,
     Rbrace,
+    Lbracket,
+    Rbracket,
 
     Function,
     Let,

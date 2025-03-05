@@ -53,6 +53,8 @@ impl<'a> Lexer<'a> {
                         }
                     }
                 }
+                '[' => Some(Token::new(TokenType::Lbracket, next.to_string())),
+                ']' => Some(Token::new(TokenType::Rbracket, next.to_string())),
                 '+' => Some(Token::new(TokenType::Plus, next.to_string())),
                 ';' => Some(Token::new(TokenType::Semicolon, next.to_string())),
                 ',' => Some(Token::new(TokenType::Comma, next.to_string())),
@@ -227,6 +229,7 @@ if (5 < 10) {
 }
 \"foobar\"
 \"foo bar\"
+[1, 2];
         "
         .to_string();
         let lexer = Lexer::new(&input);
@@ -300,6 +303,12 @@ if (5 < 10) {
             Token::new(TokenType::Rbrace, "}".to_string()),
             Token::new(TokenType::Str("foobar".to_string()), "foobar".to_string()),
             Token::new(TokenType::Str("foo bar".to_string()), "foo bar".to_string()),
+            Token::new(TokenType::Lbracket, "[".to_string()),
+            Token::new(TokenType::Int(1), "1".to_string()),
+            Token::new(TokenType::Comma, ",".to_string()),
+            Token::new(TokenType::Int(2), "2".to_string()),
+            Token::new(TokenType::Rbracket, "]".to_string()),
+            Token::new(TokenType::Semicolon, ";".to_string()),
         ];
 
         let mut i = 0;
