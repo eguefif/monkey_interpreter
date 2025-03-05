@@ -1,3 +1,5 @@
+use core::fmt;
+
 pub mod lexer;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -50,6 +52,18 @@ impl Token {
         Self {
             token_type,
             litteral,
+        }
+    }
+}
+
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TokenType::Lbracket => write!(f, "left bracket"),
+            TokenType::Rbracket => write!(f, "right bracket"),
+            TokenType::Lparen => write!(f, "left parenthesis"),
+            TokenType::Rparen => write!(f, "right parenthesis"),
+            _ => write!(f, ""),
         }
     }
 }

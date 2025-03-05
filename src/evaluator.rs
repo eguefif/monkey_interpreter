@@ -153,7 +153,6 @@ fn evaluate_function(
     Ok(Object::new(ObjectType::Function(Func {
         params: params,
         body: block,
-        //env: env.clone(),
     })))
 }
 

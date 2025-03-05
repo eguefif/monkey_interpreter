@@ -89,6 +89,7 @@ pub enum Expression {
     Identifier(Identifier),
     Int(Integer),
     Str(Str),
+    Array(ArrayLitteral),
     Boolean(Bool),
     PrefixOp(PrefixExpression),
     InfixOp(InfixExpression),
@@ -101,6 +102,7 @@ pub enum Expression {
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Expression::Array(value) => write!(f, "{}", value),
             Expression::Str(value) => write!(f, "{}", value),
             Expression::Identifier(value) => write!(f, "{}", value),
             Expression::Int(value) => write!(f, "{}", value),
@@ -403,5 +405,25 @@ pub struct CallExpression {
 impl fmt::Display for CallExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Function call")
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ArrayLitteral {
+    pub token: Token,
+    pub elements: Vec<Expression>,
+}
+
+impl fmt::Display for ArrayLitteral {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut str = String::new();
+
+        for element in self.elements.iter() {
+            str.push_str(format!("{}, ", element).as_str());
+        }
+        str.pop();
+        str.pop();
+
+        write!(f, "[{}]", str)
     }
 }
