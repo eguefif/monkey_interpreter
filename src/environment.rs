@@ -1,3 +1,4 @@
+use crate::builtin::{is_builtin, make_builtin};
 use crate::object::{Object, Variable};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -43,9 +44,16 @@ impl Environment {
                 if let Ok(value) = outer.borrow().get_variable(name) {
                     let obj = Object::new_from(&value);
                     return Ok(obj);
+                } else if is_builtin(name) {
+                    return Ok(make_builtin(name));
+                } else {
+                    Err(format!("Unknown identifier: {name}"))
                 }
+            } else if is_builtin(name) {
+                return Ok(make_builtin(name));
+            } else {
+                Err(format!("Unknown identifier: {name}"))
             }
-            Err(format!("Unknown identifier: {name}"))
         }
     }
 }

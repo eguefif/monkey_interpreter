@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::iter::zip;
 use std::rc::Rc;
 
+use crate::builtin::evaluate_builtin;
 use crate::environment::Environment;
 use crate::object::{Func, Str};
 use crate::parser::ast_types::{CallExpression, FunctionExpression};
@@ -124,20 +125,22 @@ fn evaluate_call(call: &CallExpression, env: Rc<RefCell<Environment>>) -> Result
         arg_values.push(evaluate_expression(&exp, env.clone())?);
     }
     let func = evaluate_expression(&call.function, env.clone())?;
-    if let ObjectType::Function(func) = func.obj_type {
-        let mut new_env = Environment::from_env(env);
-        for (name, obj) in zip(func.params, arg_values) {
-            let var = Variable {
-                value: obj,
-                name: name.value,
-            };
-            new_env.push(var);
+    match func.obj_type {
+        ObjectType::Function(func) => {
+            let mut new_env = Environment::from_env(env);
+            for (name, obj) in zip(func.params, arg_values) {
+                let var = Variable {
+                    value: obj,
+                    name: name.value,
+                };
+                new_env.push(var);
+            }
+            evaluate_block_statement(&func.body.statements, Rc::new(RefCell::new(new_env)))
         }
-        evaluate_block_statement(&func.body.statements, Rc::new(RefCell::new(new_env)))
-    } else {
-        Err(format!(
+        ObjectType::BuiltIn(builtin) => evaluate_builtin(builtin, arg_values),
+        _ => Err(format!(
             "Error while evaluating function got instead: \n{func:?}"
-        ))
+        )),
     }
 }
 
@@ -578,6 +581,11 @@ return 1;
                 "unknown operator: BOOLEAN + BOOLEAN",
             ),
             ("let a = 5; b;", "Unknown identifier: b"),
+            ("len(1)", "argument to 'len' not supported, got INTEGER"),
+            (
+                "len(\"1\", \"2\")",
+                "wrong number of arguments. got=2, want=1",
+            ),
         ];
         for (test, expected) in tests {
             let result = test_eval_with_error(test);
@@ -702,6 +710,36 @@ hello(\"Emmanuel\");
             assert_eq!(value.value, "Hello Emmanuel!");
         } else {
             panic!("Not a string {:?}", result);
+        }
+    }
+
+    #[test]
+    fn it_should_evaluate_builtin_len() {
+        let input = "
+let a = \"Hello, World\";
+let x = len(a);
+x
+        ";
+        let result = test_eval(input);
+        if let ObjectType::Int(value) = result.obj_type {
+            assert_eq!(value.value, 12);
+        } else {
+            panic!("Not a int {:?}", result);
+        }
+    }
+
+    #[test]
+    fn it_should_evaluate_builtin_len_0() {
+        let input = "
+let a = \"\";
+let x = len(a);
+x
+        ";
+        let result = test_eval(input);
+        if let ObjectType::Int(value) = result.obj_type {
+            assert_eq!(value.value, 0);
+        } else {
+            panic!("Not a int {:?}", result);
         }
     }
 }

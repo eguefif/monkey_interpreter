@@ -8,6 +8,7 @@ use std::cell::RefCell;
 use std::fs;
 use std::rc::Rc;
 
+pub mod builtin;
 pub mod environment;
 pub mod evaluator;
 pub mod object;

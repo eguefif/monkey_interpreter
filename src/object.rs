@@ -1,9 +1,13 @@
 use std::fmt;
 
-use crate::parser::ast_types::{BlockStatement, Identifier};
+use crate::{
+    builtin::BuiltinType,
+    parser::ast_types::{BlockStatement, Identifier},
+};
 
 #[derive(Debug, PartialEq)]
 pub enum ObjectType {
+    BuiltIn(BuiltinType),
     Int(Int),
     Str(Str),
     Bool(BoolObject),
@@ -17,6 +21,7 @@ impl fmt::Display for ObjectType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ObjectType::Int(value) => write!(f, "{}", value),
+            ObjectType::BuiltIn(value) => write!(f, "{}", value),
             ObjectType::Str(value) => write!(f, "{}", value),
             ObjectType::Bool(value) => write!(f, "{}", value),
             ObjectType::Return(value) => write!(f, "{}", value),
