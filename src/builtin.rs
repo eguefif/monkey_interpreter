@@ -9,11 +9,13 @@ pub enum BuiltinType {
     Last,
     Rest,
     Push,
+    Puts,
 }
 
 impl fmt::Display for BuiltinType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            BuiltinType::Puts => write!(f, "puts"),
             BuiltinType::Len => write!(f, "len"),
             BuiltinType::First => write!(f, "first"),
             BuiltinType::Last => write!(f, "last"),
@@ -28,6 +30,7 @@ pub fn len(str: String) -> usize {
 
 pub fn is_builtin(name: &str) -> bool {
     match name {
+        "puts" => true,
         "len" => true,
         "first" => true,
         "last" => true,
@@ -39,6 +42,7 @@ pub fn is_builtin(name: &str) -> bool {
 
 pub fn make_builtin(name: &str) -> Object {
     match name {
+        "puts" => Object::new(ObjectType::BuiltIn(BuiltinType::Puts)),
         "len" => Object::new(ObjectType::BuiltIn(BuiltinType::Len)),
         "first" => Object::new(ObjectType::BuiltIn(BuiltinType::First)),
         "last" => Object::new(ObjectType::BuiltIn(BuiltinType::Last)),
@@ -55,6 +59,7 @@ pub fn evaluate_builtin(name: BuiltinType, args: Vec<Object>) -> Result<Object, 
         BuiltinType::Last => apply_last(args),
         BuiltinType::Rest => apply_rest(args),
         BuiltinType::Push => apply_push(args),
+        BuiltinType::Puts => apply_puts(args),
     }
 }
 
@@ -278,4 +283,38 @@ fn apply_push(args: Vec<Object>) -> Result<Object, String> {
 
         ObjectType::Null => return Err("argument to 'first' not supported, got NULL".to_string()),
     }
+}
+
+fn apply_puts(args: Vec<Object>) -> Result<Object, String> {
+    if args.len() == 0 {
+        println!();
+    } else {
+        for arg in args {
+            match arg.obj_type {
+                ObjectType::Array(array) => println!("{}", array),
+
+                ObjectType::Hash(hash) => println!("{}", hash),
+                ObjectType::Str(str) => println!("{}", str),
+                ObjectType::Int(int) => println!("{}", int),
+                ObjectType::Bool(bool) => println!("{}", bool),
+                ObjectType::Null => println!("null"),
+                ObjectType::BuiltIn(_) => {
+                    return Err("argument to 'first' not supported, got BUILTIN".to_string())
+                }
+
+                ObjectType::Return(_) => {
+                    return Err("argument to 'first' not supported, got RETURN".to_string())
+                }
+
+                ObjectType::Let(_) => {
+                    return Err("argument to 'first' not supported, got LET".to_string())
+                }
+
+                ObjectType::Function(_) => {
+                    return Err("argument to 'first' not supported, got FUNCTION".to_string())
+                }
+            };
+        }
+    }
+    Ok(Object::new(ObjectType::Null))
 }
