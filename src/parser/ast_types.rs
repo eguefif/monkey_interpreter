@@ -37,6 +37,7 @@ pub enum Precedence {
     Product,
     Prefix,
     Call,
+    Index,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -89,6 +90,7 @@ pub enum Expression {
     Identifier(Identifier),
     Int(Integer),
     Str(Str),
+    Index(IndexExpression),
     Array(ArrayLitteral),
     Boolean(Bool),
     PrefixOp(PrefixExpression),
@@ -102,6 +104,7 @@ pub enum Expression {
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Expression::Index(value) => write!(f, "{}", value),
             Expression::Array(value) => write!(f, "{}", value),
             Expression::Str(value) => write!(f, "{}", value),
             Expression::Identifier(value) => write!(f, "{}", value),
@@ -404,7 +407,13 @@ pub struct CallExpression {
 
 impl fmt::Display for CallExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Function call")
+        let mut args = String::new();
+        for arg in self.args.iter() {
+            args.push_str(format!("{}, ", arg).as_str());
+        }
+        args.pop();
+        args.pop();
+        write!(f, "{}({})", self.function, args)
     }
 }
 
@@ -425,5 +434,18 @@ impl fmt::Display for ArrayLitteral {
         str.pop();
 
         write!(f, "[{}]", str)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct IndexExpression {
+    pub token: Token,
+    pub left: Box<Expression>,
+    pub index: Box<Expression>,
+}
+
+impl fmt::Display for IndexExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}[{}])", self.left, self.index)
     }
 }
