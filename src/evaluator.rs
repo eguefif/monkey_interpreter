@@ -778,7 +778,11 @@ x
 
     #[test]
     fn it_should_evaluate_builtins() {
-        let tests = [("len([1, 2, 3]);", 3), ("first([1, 2, 3]);", 1)];
+        let tests = [
+            ("len([1, 2, 3]);", 3),
+            ("first([1, 2, 3]);", 1),
+            ("last([1, 2, 3]);", 3),
+        ];
         for (input, expected) in tests {
             let result = test_eval(input);
             if let ObjectType::Int(value) = result.obj_type {
