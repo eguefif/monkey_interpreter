@@ -1,12 +1,13 @@
 use std::fmt;
 
-use crate::object::{Int, Object, ObjectType};
+use crate::object::{Array, Int, Object, ObjectType};
 
 #[derive(Debug, PartialEq)]
 pub enum BuiltinType {
     Len,
     First,
     Last,
+    Rest,
 }
 
 impl fmt::Display for BuiltinType {
@@ -15,6 +16,7 @@ impl fmt::Display for BuiltinType {
             BuiltinType::Len => write!(f, "len"),
             BuiltinType::First => write!(f, "first"),
             BuiltinType::Last => write!(f, "last"),
+            BuiltinType::Rest => write!(f, "rest"),
         }
     }
 }
@@ -27,6 +29,7 @@ pub fn is_builtin(name: &str) -> bool {
         "len" => true,
         "first" => true,
         "last" => true,
+        "rest" => true,
         _ => false,
     }
 }
@@ -36,6 +39,7 @@ pub fn make_builtin(name: &str) -> Object {
         "len" => Object::new(ObjectType::BuiltIn(BuiltinType::Len)),
         "first" => Object::new(ObjectType::BuiltIn(BuiltinType::First)),
         "last" => Object::new(ObjectType::BuiltIn(BuiltinType::Last)),
+        "rest" => Object::new(ObjectType::BuiltIn(BuiltinType::Rest)),
         _ => Object::new(ObjectType::Null),
     }
 }
@@ -45,6 +49,7 @@ pub fn evaluate_builtin(name: BuiltinType, args: Vec<Object>) -> Result<Object, 
         BuiltinType::Len => apply_len(args),
         BuiltinType::First => apply_first(args),
         BuiltinType::Last => apply_last(args),
+        BuiltinType::Rest => apply_rest(args),
     }
 }
 
@@ -147,6 +152,54 @@ fn apply_last(args: Vec<Object>) -> Result<Object, String> {
                 .last()
                 .expect("Out of bound, the array is empty");
             Ok(Object::new_from(&obj))
+        }
+        ObjectType::Str(_) => {
+            return Err("argument to 'first' not supported, got String".to_string())
+        }
+        ObjectType::Int(_) => {
+            return Err("argument to 'first' not supported, got INTEGER".to_string())
+        }
+
+        ObjectType::BuiltIn(_) => {
+            return Err("argument to 'first' not supported, got BUILTIN".to_string())
+        }
+
+        ObjectType::Bool(_) => {
+            return Err("argument to 'first' not supported, got BOOLEAN".to_string())
+        }
+        ObjectType::Return(_) => {
+            return Err("argument to 'first' not supported, got RETURN".to_string())
+        }
+
+        ObjectType::Let(_) => return Err("argument to 'first' not supported, got LET".to_string()),
+
+        ObjectType::Function(_) => {
+            return Err("argument to 'first' not supported, got FUNCTION".to_string())
+        }
+
+        ObjectType::Null => return Err("argument to 'first' not supported, got NULL".to_string()),
+    }
+}
+
+fn apply_rest(args: Vec<Object>) -> Result<Object, String> {
+    if args.len() > 1 || args.len() == 0 {
+        return Err(format!(
+            "wrong number of arguments. got={}, want=1",
+            args.len()
+        ));
+    }
+    match args[0].obj_type {
+        ObjectType::Array(ref value) => {
+            if value.elements.len() == 0 {
+                return Err("Out of bound, the array is empty".to_string());
+            }
+            let mut rest = Vec::new();
+            let mut it = value.elements.iter();
+            it.next();
+            for element in it {
+                rest.push(Object::new_from(&element));
+            }
+            Ok(Object::new(ObjectType::Array(Array { elements: rest })))
         }
         ObjectType::Str(_) => {
             return Err("argument to 'first' not supported, got String".to_string())

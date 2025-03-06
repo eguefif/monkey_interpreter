@@ -82,7 +82,7 @@ fn evaluate_return(exp: &ReturnStatement, env: Rc<RefCell<Environment>>) -> Resu
 }
 
 fn evaluate_expression(exp: &Expression, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
-    let retval = match exp {
+    match exp {
         Expression::Index(idx) => evaluate_index_op(idx, env.clone()),
         Expression::Array(array) => evaluate_array(array, env.clone()),
         Expression::CallExpression(call) => evaluate_call(call, env.clone()),
@@ -117,9 +117,7 @@ fn evaluate_expression(exp: &Expression, env: Rc<RefCell<Environment>>) -> Resul
             evaluate_infix(&infix.infix_type, left, right)
         }
         _ => Ok(Object::new(ObjectType::Null)),
-    };
-
-    retval
+    }
 }
 
 fn evaluate_index_op(

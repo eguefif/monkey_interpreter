@@ -173,7 +173,7 @@ impl fmt::Display for Array {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut elements = String::new();
         for e in self.elements.iter() {
-            elements.push_str(format!("{}", e).as_str());
+            elements.push_str(format!("{}, ", e).as_str());
         }
         elements.pop();
         elements.pop();
