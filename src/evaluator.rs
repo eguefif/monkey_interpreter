@@ -4,8 +4,8 @@ use std::rc::Rc;
 
 use crate::builtin::evaluate_builtin;
 use crate::environment::Environment;
-use crate::object::{Func, Str};
-use crate::parser::ast_types::{CallExpression, FunctionExpression};
+use crate::object::{Array, Func, Str};
+use crate::parser::ast_types::{ArrayLitteral, CallExpression, FunctionExpression};
 use crate::{
     object::{BoolObject, Int, Object, ObjectType, Variable},
     parser::ast_types::{
@@ -82,6 +82,7 @@ fn evaluate_return(exp: &ReturnStatement, env: Rc<RefCell<Environment>>) -> Resu
 fn evaluate_expression(exp: &Expression, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
     let _ = env.borrow().get_variable("identity");
     let retval = match exp {
+        Expression::Array(array) => evaluate_array(array, env.clone()),
         Expression::CallExpression(call) => evaluate_call(call, env.clone()),
         Expression::Function(func) => evaluate_function(func, env.clone()),
         Expression::Identifier(ident) => {
@@ -117,6 +118,14 @@ fn evaluate_expression(exp: &Expression, env: Rc<RefCell<Environment>>) -> Resul
     };
 
     retval
+}
+
+fn evaluate_array(array: &ArrayLitteral, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
+    let mut elements: Vec<Object> = Vec::new();
+    for element in array.elements.iter() {
+        elements.push(evaluate_expression(element, env.clone())?);
+    }
+    Ok(Object::new(ObjectType::Array(Array { elements })))
 }
 
 fn evaluate_call(call: &CallExpression, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
@@ -737,6 +746,26 @@ x
         let result = test_eval(input);
         if let ObjectType::Int(value) = result.obj_type {
             assert_eq!(value.value, 0);
+        } else {
+            panic!("Not a int {:?}", result);
+        }
+    }
+
+    #[test]
+    fn it_should_evaluate_array_litteral() {
+        let input = "
+[1, 2 * 2, 3 + 3];
+        ";
+        let expected = [1, 4, 6];
+        let result = test_eval(input);
+        if let ObjectType::Array(array) = result.obj_type {
+            for (i, elem) in array.elements.iter().enumerate() {
+                if let ObjectType::Int(int) = &elem.obj_type {
+                    assert_eq!(int.value, expected[i])
+                } else {
+                    panic!("Expected an int")
+                }
+            }
         } else {
             panic!("Not a int {:?}", result);
         }

@@ -76,6 +76,7 @@ fn apply_len(args: Vec<Object>) -> Result<Object, String> {
 
             ObjectType::Null => return Err("argument to 'len' not supported, got NULL".to_string()),
             ObjectType::Str(_) => return Err("IMPOSSIBLE to have a string here".to_string()),
+            ObjectType::Array(_) => return Err("IMPOSSIBLE to have an array here".to_string()),
         }
     }
 }
