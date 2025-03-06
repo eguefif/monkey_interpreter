@@ -24,6 +24,7 @@ pub enum TokenType {
     Noteq,
 
     Comma,
+    Colon,
     Semicolon,
     Lparen,
     Rparen,
