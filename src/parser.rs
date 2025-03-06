@@ -156,12 +156,21 @@ impl<'a> Parser<'a> {
     fn parse_hash_litteral(&mut self, token: Token) -> Expression {
         let mut keys: Vec<Expression> = Vec::new();
         let mut values: Vec<Expression> = Vec::new();
-        let next = self.lexer.next().expect("Unexpected EOF in hash parsing");
-        loop {
-            if TokenType::Rbrace == next.token_type {
-            } else {
-                break;
+        let peek = self.lexer.peek().expect("Unexpected EOF in hash parsing");
+        if peek.token_type != TokenType::Rbrace {
+            loop {
+                let next = self.lexer.next().expect("Unepected EOF in hash parsing");
+                keys.push(self.parse_expression(next, Precedence::Lowest));
+                self.expect_token(TokenType::Colon);
+                let next = self.lexer.next().expect("Unepected EOF in hash parsing");
+                values.push(self.parse_expression(next, Precedence::Lowest));
+                let next = self.lexer.next().expect("Unepected EOF in hash parsing");
+                if next.token_type != TokenType::Comma {
+                    break;
+                }
             }
+        } else {
+            self.lexer.next();
         }
 
         let elements = self.make_hash(keys, values);
@@ -1192,12 +1201,57 @@ return retval;
             if let Expression::Hash(hash) = stmt.expression {
                 for (i, value) in hash.elements.values().enumerate() {
                     if let Expression::Int(value) = value {
-                        assert_eq!(value.value, values[i]);
+                        assert!(values.contains(&value.value));
                     }
                 }
                 for (i, value) in hash.elements.keys().enumerate() {
                     if let Expression::Str(value) = value {
-                        assert_eq!(value.value, keys[i]);
+                        assert!(keys.contains(&value.value.as_str()));
+                    }
+                }
+            } else {
+                panic!("Not a hashmap");
+            }
+        } else {
+            panic!("Not an expression");
+        }
+    }
+
+    #[test]
+    fn it_should_parse_empty_hash_litteral() {
+        let input = "{}";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        if let Statement::Expression(stmt) = program.statements[0].clone() {
+            if let Expression::Hash(hash) = stmt.expression {
+                assert!(hash.elements.is_empty());
+            } else {
+                panic!("Not a hashmap");
+            }
+        } else {
+            panic!("Not an expression");
+        }
+    }
+
+    #[test]
+    fn it_should_parse_hash_litteral_expression_value() {
+        let input = "{\"one\": 0 + 1, \"two\": 10 - 8, \"three\": 15/5}";
+        let values = [1, 2, 3];
+        let keys = ["one", "two", "three"];
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        if let Statement::Expression(stmt) = program.statements[0].clone() {
+            if let Expression::Hash(hash) = stmt.expression {
+                for (i, value) in hash.elements.values().enumerate() {
+                    if let Expression::Int(value) = value {
+                        assert!(values.contains(&value.value));
+                    }
+                }
+                for (i, value) in hash.elements.keys().enumerate() {
+                    if let Expression::Str(value) = value {
+                        assert!(keys.contains(&value.value.as_str()));
                     }
                 }
             } else {
