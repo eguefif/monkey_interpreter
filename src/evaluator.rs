@@ -5,7 +5,9 @@ use std::rc::Rc;
 use crate::builtin::evaluate_builtin;
 use crate::environment::Environment;
 use crate::object::{Array, Func, Str};
-use crate::parser::ast_types::{ArrayLitteral, CallExpression, FunctionExpression};
+use crate::parser::ast_types::{
+    ArrayLitteral, CallExpression, FunctionExpression, IndexExpression,
+};
 use crate::{
     object::{BoolObject, Int, Object, ObjectType, Variable},
     parser::ast_types::{
@@ -80,8 +82,8 @@ fn evaluate_return(exp: &ReturnStatement, env: Rc<RefCell<Environment>>) -> Resu
 }
 
 fn evaluate_expression(exp: &Expression, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
-    let _ = env.borrow().get_variable("identity");
     let retval = match exp {
+        Expression::Index(idx) => evaluate_index_op(idx, env.clone()),
         Expression::Array(array) => evaluate_array(array, env.clone()),
         Expression::CallExpression(call) => evaluate_call(call, env.clone()),
         Expression::Function(func) => evaluate_function(func, env.clone()),
@@ -120,6 +122,29 @@ fn evaluate_expression(exp: &Expression, env: Rc<RefCell<Environment>>) -> Resul
     retval
 }
 
+fn evaluate_index_op(
+    idx: &IndexExpression,
+    env: Rc<RefCell<Environment>>,
+) -> Result<Object, String> {
+    let left = evaluate_expression(&idx.left, env.clone())?;
+    let index = evaluate_expression(&idx.index, env.clone())?;
+    if let ObjectType::Array(array) = left.obj_type {
+        if let ObjectType::Int(index) = index.obj_type {
+            if index.value as usize >= array.elements.len() {
+                return Err("Error: index out of bound".to_string());
+            }
+            let obj = &array.elements[index.value as usize];
+            Ok(Object::new_from(obj))
+        } else {
+            Err(format!("Error: index should be an INT got : {}", index))
+        }
+    } else {
+        Err(format!(
+            "Error in index operator: left should be an array, got: {}",
+            left,
+        ))
+    }
+}
 fn evaluate_array(array: &ArrayLitteral, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
     let mut elements: Vec<Object> = Vec::new();
     for element in array.elements.iter() {
@@ -769,5 +794,42 @@ x
         } else {
             panic!("Not a int {:?}", result);
         }
+    }
+
+    #[test]
+    fn it_should_evaluate_index_operator() {
+        let tests = [
+            ("[1, 2, 3][0];", 1),
+            ("[1, 2, 3][1];", 2),
+            ("[1, 2, 3][2];", 3),
+            ("let i = 0; [1][i];", 1),
+            ("[1, 2, 3][1 + 1];", 3),
+            ("let myArray = [1, 2, 3]; myArray[2];", 3),
+            (
+                "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+                6,
+            ),
+            (
+                "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i];",
+                2,
+            ),
+        ];
+        for (input, expected) in tests.iter() {
+            println!("---------------------------------------");
+            println!("input: {}", input);
+            let result = test_eval(input);
+            if let ObjectType::Int(value) = result.obj_type {
+                assert_eq!(value.value, *expected)
+            } else {
+                panic!("Not a int {:?}", result);
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn it_should_panic_when_accessing_out_of_bound_array() {
+        let input = "[1][1];";
+        test_eval(input);
     }
 }

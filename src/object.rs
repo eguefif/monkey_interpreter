@@ -87,6 +87,16 @@ impl Object {
                     }),
                 }
             }
+            ObjectType::Array(array) => {
+                let mut elements: Vec<Object> = Vec::new();
+                for elem in array.elements.iter() {
+                    elements.push(Object::new_from(elem));
+                }
+                Self {
+                    inspect: obj.inspect.clone(),
+                    obj_type: ObjectType::Array(Array { elements }),
+                }
+            }
             _ => Self {
                 inspect: "null".to_string(),
                 obj_type: ObjectType::Null,
