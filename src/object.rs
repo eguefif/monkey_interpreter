@@ -10,6 +10,7 @@ pub enum ObjectType {
     BuiltIn(BuiltinType),
     Int(Int),
     Str(Str),
+    Array(Array),
     Bool(BoolObject),
     Return(Box<Object>),
     Let(Box<Variable>),
@@ -20,6 +21,7 @@ pub enum ObjectType {
 impl fmt::Display for ObjectType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            ObjectType::Array(value) => write!(f, "{}", value),
             ObjectType::Int(value) => write!(f, "{}", value),
             ObjectType::BuiltIn(value) => write!(f, "{}", value),
             ObjectType::Str(value) => write!(f, "{}", value),
@@ -83,6 +85,16 @@ impl Object {
                         params: new_params,
                         body: value.body.clone(),
                     }),
+                }
+            }
+            ObjectType::Array(array) => {
+                let mut elements: Vec<Object> = Vec::new();
+                for elem in array.elements.iter() {
+                    elements.push(Object::new_from(elem));
+                }
+                Self {
+                    inspect: obj.inspect.clone(),
+                    obj_type: ObjectType::Array(Array { elements }),
                 }
             }
             _ => Self {
@@ -149,5 +161,22 @@ impl fmt::Display for Func {
             }
         }
         write!(f, "fn ({}) {{\n{}\n}}", params, self.body)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Array {
+    pub elements: Vec<Object>,
+}
+
+impl fmt::Display for Array {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut elements = String::new();
+        for e in self.elements.iter() {
+            elements.push_str(format!("{}, ", e).as_str());
+        }
+        elements.pop();
+        elements.pop();
+        write!(f, "[{}]", elements)
     }
 }

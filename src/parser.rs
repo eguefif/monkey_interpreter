@@ -1,6 +1,6 @@
 use ast_types::{
-    BlockStatement, Bool, CallExpression, FunctionExpression, IfExpression, InfixExpression,
-    Integer, PrefixExpression, PrefixType, Str,
+    ArrayLitteral, BlockStatement, Bool, CallExpression, FunctionExpression, IfExpression,
+    IndexExpression, InfixExpression, Integer, PrefixExpression, PrefixType, Str,
 };
 
 use crate::parser::ast_types::{
@@ -130,7 +130,8 @@ impl<'a> Parser<'a> {
             TokenType::Bang => self.parse_bang(token),
             TokenType::Minus => self.parse_minus(token),
             TokenType::True | TokenType::False => self.parse_bool(token),
-            TokenType::Lparen => self.parse_group_expression(token),
+            TokenType::Lparen => self.parse_group_expression(token, TokenType::Rparen),
+            TokenType::Lbracket => self.parse_array_litteral(token),
             TokenType::If => self.parse_if_expression(token),
             TokenType::Function => self.parse_function(token),
             _ => todo!("not yet implement {:?}", token),
@@ -147,6 +148,11 @@ impl<'a> Parser<'a> {
             }
         }
         left_expression
+    }
+
+    fn parse_array_litteral(&mut self, token: Token) -> Expression {
+        let elements = self.parse_expression_list(TokenType::Rbracket);
+        Expression::Array(ArrayLitteral { token, elements })
     }
 
     fn parse_function(&mut self, token: Token) -> Expression {
@@ -183,6 +189,38 @@ impl<'a> Parser<'a> {
                 TokenType::Comma => {}
                 _ => panic!("Unexpected token in function params: {:?}", token),
             }
+        }
+
+        return retval;
+    }
+
+    fn parse_expression_list(&mut self, end_token: TokenType) -> Vec<Expression> {
+        let mut retval: Vec<Expression> = Vec::new();
+        let mut next = self
+            .lexer
+            .peek()
+            .expect("Unexpected end of file in function parameters");
+        if next.token_type == end_token {
+            return retval;
+        }
+        self.lexer.next();
+        retval.push(self.parse_expression(next, Precedence::Lowest));
+        loop {
+            next = self
+                .lexer
+                .next()
+                .expect("Unexpected end of file in function parameters");
+            if next.token_type != TokenType::Comma {
+                break;
+            }
+            next = self
+                .lexer
+                .next()
+                .expect("Unexpected end of file in function parameters");
+            retval.push(self.parse_expression(next, Precedence::Lowest));
+        }
+        if next.token_type != end_token {
+            panic!("Expected {} token got {}", end_token, next.token_type);
         }
 
         return retval;
@@ -241,21 +279,21 @@ impl<'a> Parser<'a> {
         BlockStatement { statements }
     }
 
-    fn parse_group_expression(&mut self, token: Token) -> Expression {
+    fn parse_group_expression(&mut self, token: Token, end_token: TokenType) -> Expression {
         let next_token = self
             .lexer
             .next()
-            .expect("Error: parenthesis group has no member");
+            .expect("Error: unexpected end of file in groupe expression");
         let exp = self.parse_expression(next_token, Precedence::Lowest);
         let peek = self
             .lexer
             .peek()
-            .expect("Error: a left parenthesis need to be close with a right one");
-        if peek.token_type == TokenType::Rparen {
+            .expect("Error: unexpected end of file in groupe expressiona");
+        if peek.token_type == end_token {
             self.lexer.next();
             exp
         } else {
-            panic!("Error: a left parenthesis need to be close with a right one");
+            panic!("Error: expected {} to close group expression", end_token);
         }
     }
 
@@ -312,6 +350,22 @@ impl<'a> Parser<'a> {
                 token: token,
                 function: Box::new(left),
                 args: self.parse_call_func_args(),
+            })
+        } else if token.token_type == TokenType::Lbracket {
+            let next_token = self
+                .lexer
+                .next()
+                .expect("Index operator need an expression");
+            let precedence = get_precedence(&token.token_type);
+            let index = self.parse_expression(next_token, Precedence::Lowest);
+            let t = self
+                .lexer
+                .next()
+                .expect("Index operator must be closed by ]");
+            Expression::Index(IndexExpression {
+                token,
+                left: Box::new(left),
+                index: Box::new(index),
             })
         } else {
             let next_token = self
@@ -371,6 +425,7 @@ fn get_precedence(token: &TokenType) -> Precedence {
         TokenType::Gt => Precedence::Lessgreater,
         TokenType::Lt => Precedence::Lessgreater,
         TokenType::Lparen => Precedence::Call,
+        TokenType::Lbracket => Precedence::Index,
         _ => Precedence::Lowest,
     }
 }
@@ -798,6 +853,14 @@ return add(5, 7);
                 "3 + 4 * 5 == 3 * 1 + 4 * 5",
                 "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));\n",
             ),
+            (
+                "a * [1, 2, 3, 4][b * c] * d",
+                "((a * ([1, 2, 3, 4][(b * c)])) * d);\n",
+            ),
+            (
+                "add(a * b[2], b[1], 2 * [1, 2][1])",
+                "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])));\n",
+            ),
         ];
         for input in inputs {
             let lexer = Lexer::new(input.0);
@@ -1037,6 +1100,50 @@ return retval;
             if let Expression::Str(value) = var.value {
                 assert_eq!(value.value, "Hello, World")
             }
+        }
+    }
+
+    #[test]
+    fn it_should_parse_array() {
+        let input = "[1, 2, 3, 4]";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        assert_eq!(format!("{}", program), format!("{input};\n"));
+        let statement = program.statements[0].clone();
+        if let Statement::Expression(arr) = statement {
+            if let Expression::Array(array) = arr.expression {
+                let v = vec![1, 2, 3, 4];
+                for (i, elem) in array.elements.iter().enumerate() {
+                    if let Expression::Int(value) = elem {
+                        assert_eq!(value.value, v[i]);
+                    } else {
+                        panic!("Not an int in array");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn it_should_parse_index_operator() {
+        let input = "myArray[1 + 1]";
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program: Program = parser.parse_program().unwrap();
+        if let Statement::Expression(stmt) = program.statements[0].clone() {
+            if let Expression::Index(idx) = stmt.expression {
+                if let Expression::Identifier(ident) = *idx.left {
+                    assert_eq!(ident.value, "myArray");
+                }
+                if let Expression::InfixOp(infix) = *idx.index {
+                    assert_eq!(format!("{}", infix), "(1 + 1)");
+                }
+            } else {
+                panic!("Not an index expression");
+            }
+        } else {
+            panic!("Not an expression");
         }
     }
 }
