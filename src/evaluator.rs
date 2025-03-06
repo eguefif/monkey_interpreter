@@ -777,6 +777,18 @@ x
     }
 
     #[test]
+    fn it_should_evaluate_builtins() {
+        let tests = [("len([1, 2, 3]);", 3), ("first([1, 2, 3]);", 1)];
+        for (input, expected) in tests {
+            let result = test_eval(input);
+            if let ObjectType::Int(value) = result.obj_type {
+                assert_eq!(value.value, expected)
+            } else {
+                panic!("Expect int");
+            }
+        }
+    }
+    #[test]
     fn it_should_evaluate_array_litteral() {
         let input = "
 [1, 2 * 2, 3 + 3];
