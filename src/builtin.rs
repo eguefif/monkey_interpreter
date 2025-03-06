@@ -8,6 +8,7 @@ pub enum BuiltinType {
     First,
     Last,
     Rest,
+    Push,
 }
 
 impl fmt::Display for BuiltinType {
@@ -17,6 +18,7 @@ impl fmt::Display for BuiltinType {
             BuiltinType::First => write!(f, "first"),
             BuiltinType::Last => write!(f, "last"),
             BuiltinType::Rest => write!(f, "rest"),
+            BuiltinType::Push => write!(f, "push"),
         }
     }
 }
@@ -30,6 +32,7 @@ pub fn is_builtin(name: &str) -> bool {
         "first" => true,
         "last" => true,
         "rest" => true,
+        "push" => true,
         _ => false,
     }
 }
@@ -40,6 +43,7 @@ pub fn make_builtin(name: &str) -> Object {
         "first" => Object::new(ObjectType::BuiltIn(BuiltinType::First)),
         "last" => Object::new(ObjectType::BuiltIn(BuiltinType::Last)),
         "rest" => Object::new(ObjectType::BuiltIn(BuiltinType::Rest)),
+        "push" => Object::new(ObjectType::BuiltIn(BuiltinType::Push)),
         _ => Object::new(ObjectType::Null),
     }
 }
@@ -50,6 +54,7 @@ pub fn evaluate_builtin(name: BuiltinType, args: Vec<Object>) -> Result<Object, 
         BuiltinType::First => apply_first(args),
         BuiltinType::Last => apply_last(args),
         BuiltinType::Rest => apply_rest(args),
+        BuiltinType::Push => apply_push(args),
     }
 }
 
@@ -200,6 +205,52 @@ fn apply_rest(args: Vec<Object>) -> Result<Object, String> {
                 rest.push(Object::new_from(&element));
             }
             Ok(Object::new(ObjectType::Array(Array { elements: rest })))
+        }
+        ObjectType::Str(_) => {
+            return Err("argument to 'first' not supported, got String".to_string())
+        }
+        ObjectType::Int(_) => {
+            return Err("argument to 'first' not supported, got INTEGER".to_string())
+        }
+
+        ObjectType::BuiltIn(_) => {
+            return Err("argument to 'first' not supported, got BUILTIN".to_string())
+        }
+
+        ObjectType::Bool(_) => {
+            return Err("argument to 'first' not supported, got BOOLEAN".to_string())
+        }
+        ObjectType::Return(_) => {
+            return Err("argument to 'first' not supported, got RETURN".to_string())
+        }
+
+        ObjectType::Let(_) => return Err("argument to 'first' not supported, got LET".to_string()),
+
+        ObjectType::Function(_) => {
+            return Err("argument to 'first' not supported, got FUNCTION".to_string())
+        }
+
+        ObjectType::Null => return Err("argument to 'first' not supported, got NULL".to_string()),
+    }
+}
+
+fn apply_push(args: Vec<Object>) -> Result<Object, String> {
+    if args.len() != 2 {
+        return Err(format!(
+            "wrong number of arguments. got={}, want=1",
+            args.len()
+        ));
+    }
+    match args[0].obj_type {
+        ObjectType::Array(ref value) => {
+            let mut new_array = Vec::new();
+            for element in value.elements.iter() {
+                new_array.push(Object::new_from(element))
+            }
+            new_array.push(Object::new_from(&args[1]));
+            Ok(Object::new(ObjectType::Array(Array {
+                elements: new_array,
+            })))
         }
         ObjectType::Str(_) => {
             return Err("argument to 'first' not supported, got String".to_string())
