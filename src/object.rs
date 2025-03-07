@@ -1,16 +1,21 @@
-use std::fmt;
+use std::{
+    collections::HashMap,
+    fmt,
+    hash::{Hash, Hasher},
+};
 
 use crate::{
     builtin::BuiltinType,
     parser::ast_types::{BlockStatement, Identifier},
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ObjectType {
     BuiltIn(BuiltinType),
     Int(Int),
     Str(Str),
     Array(Array),
+    Hash(HashM),
     Bool(BoolObject),
     Return(Box<Object>),
     Let(Box<Variable>),
@@ -18,9 +23,30 @@ pub enum ObjectType {
     Null,
 }
 
+impl Hash for ObjectType {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        match self {
+            ObjectType::Hash(value) => format!("{}", value).hash(state),
+            ObjectType::Array(value) => format!("{}", value).hash(state),
+            ObjectType::Int(value) => format!("{}", value).hash(state),
+            ObjectType::BuiltIn(value) => format!("{}", value).hash(state),
+            ObjectType::Str(value) => format!("{}", value).hash(state),
+            ObjectType::Bool(value) => format!("{}", value).hash(state),
+            ObjectType::Return(value) => format!("{}", value).hash(state),
+            ObjectType::Let(value) => format!("{}", value).hash(state),
+            ObjectType::Function(value) => format!("{}", value).hash(state),
+            ObjectType::Null => format!("Null").hash(state),
+        }
+    }
+}
+
 impl fmt::Display for ObjectType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            ObjectType::Hash(value) => write!(f, "{}", value),
             ObjectType::Array(value) => write!(f, "{}", value),
             ObjectType::Int(value) => write!(f, "{}", value),
             ObjectType::BuiltIn(value) => write!(f, "{}", value),
@@ -34,7 +60,7 @@ impl fmt::Display for ObjectType {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Variable {
     pub value: Object,
     pub name: String,
@@ -46,7 +72,7 @@ impl fmt::Display for Variable {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Object {
     pub obj_type: ObjectType,
     pub inspect: String,
@@ -97,11 +123,31 @@ impl Object {
                     obj_type: ObjectType::Array(Array { elements }),
                 }
             }
+            ObjectType::Hash(hash) => {
+                let mut elements: HashMap<Object, Object> = HashMap::new();
+                for (key, value) in hash.elements.iter() {
+                    elements.insert(Object::new_from(key), Object::new_from(value));
+                }
+                Self {
+                    inspect: obj.inspect.clone(),
+                    obj_type: ObjectType::Hash(HashM { elements }),
+                }
+            }
             _ => Self {
                 inspect: "null".to_string(),
                 obj_type: ObjectType::Null,
             },
         }
+    }
+}
+
+impl Hash for Object {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        self.obj_type.hash(state);
+        self.inspect.hash(state);
     }
 }
 
@@ -111,7 +157,7 @@ impl fmt::Display for Object {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Int {
     pub value: i128,
 }
@@ -122,7 +168,7 @@ impl fmt::Display for Int {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Str {
     pub value: String,
 }
@@ -133,7 +179,7 @@ impl fmt::Display for Str {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct BoolObject {
     pub value: bool,
 }
@@ -144,7 +190,7 @@ impl fmt::Display for BoolObject {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Func {
     pub params: Vec<Identifier>,
     pub body: BlockStatement,
@@ -164,7 +210,7 @@ impl fmt::Display for Func {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Array {
     pub elements: Vec<Object>,
 }
@@ -178,5 +224,35 @@ impl fmt::Display for Array {
         elements.pop();
         elements.pop();
         write!(f, "[{}]", elements)
+    }
+}
+
+#[derive(Debug, Eq)]
+pub struct HashM {
+    pub elements: HashMap<Object, Object>,
+}
+
+impl fmt::Display for HashM {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut elements = String::new();
+        for (key, value) in self.elements.iter() {
+            elements.push_str(format!("{}: {}, ", key, value).as_str());
+        }
+        elements.pop();
+        elements.pop();
+        write!(f, "[{}]", elements)
+    }
+}
+
+impl PartialEq for HashM {
+    fn eq(&self, other: &HashM) -> bool {
+        let str_self = format!("{}", self);
+        let other_self = format!("{}", other);
+        str_self == other_self
+    }
+    fn ne(&self, other: &HashM) -> bool {
+        let str_self = format!("{}", self);
+        let other_self = format!("{}", other);
+        str_self != other_self
     }
 }

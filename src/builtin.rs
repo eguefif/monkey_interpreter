@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::object::{Array, Int, Object, ObjectType};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BuiltinType {
     Len,
     First,
@@ -92,6 +92,9 @@ fn apply_len(args: Vec<Object>) -> Result<Object, String> {
         ObjectType::Function(_) => {
             return Err("argument to 'len' not supported, got FUNCTION".to_string())
         }
+        ObjectType::Hash(_) => {
+            return Err("argument to 'first' not supported, got Hash".to_string())
+        }
 
         ObjectType::Null => return Err("argument to 'len' not supported, got NULL".to_string()),
     }
@@ -134,6 +137,10 @@ fn apply_first(args: Vec<Object>) -> Result<Object, String> {
 
         ObjectType::Function(_) => {
             return Err("argument to 'first' not supported, got FUNCTION".to_string())
+        }
+
+        ObjectType::Hash(_) => {
+            return Err("argument to 'first' not supported, got Hash".to_string())
         }
 
         ObjectType::Null => return Err("argument to 'first' not supported, got NULL".to_string()),
@@ -180,6 +187,10 @@ fn apply_last(args: Vec<Object>) -> Result<Object, String> {
 
         ObjectType::Function(_) => {
             return Err("argument to 'first' not supported, got FUNCTION".to_string())
+        }
+
+        ObjectType::Hash(_) => {
+            return Err("argument to 'first' not supported, got Hash".to_string())
         }
 
         ObjectType::Null => return Err("argument to 'first' not supported, got NULL".to_string()),
@@ -230,6 +241,10 @@ fn apply_rest(args: Vec<Object>) -> Result<Object, String> {
             return Err("argument to 'first' not supported, got FUNCTION".to_string())
         }
 
+        ObjectType::Hash(_) => {
+            return Err("argument to 'first' not supported, got Hash".to_string())
+        }
+
         ObjectType::Null => return Err("argument to 'first' not supported, got NULL".to_string()),
     }
 }
@@ -251,6 +266,10 @@ fn apply_push(args: Vec<Object>) -> Result<Object, String> {
             Ok(Object::new(ObjectType::Array(Array {
                 elements: new_array,
             })))
+        }
+
+        ObjectType::Hash(_) => {
+            return Err("argument to 'first' not supported, got Hash".to_string())
         }
         ObjectType::Str(_) => {
             return Err("argument to 'first' not supported, got String".to_string())

@@ -1,12 +1,13 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::iter::zip;
 use std::rc::Rc;
 
 use crate::builtin::evaluate_builtin;
 use crate::environment::Environment;
-use crate::object::{Array, Func, Str};
+use crate::object::{Array, Func, HashM, Str};
 use crate::parser::ast_types::{
-    ArrayLitteral, CallExpression, FunctionExpression, IndexExpression,
+    ArrayLitteral, CallExpression, FunctionExpression, HashLitteral, IndexExpression,
 };
 use crate::{
     object::{BoolObject, Int, Object, ObjectType, Variable},
@@ -85,6 +86,7 @@ fn evaluate_expression(exp: &Expression, env: Rc<RefCell<Environment>>) -> Resul
     match exp {
         Expression::Index(idx) => evaluate_index_op(idx, env.clone()),
         Expression::Array(array) => evaluate_array(array, env.clone()),
+        Expression::Hash(hash) => evaluate_hash(hash, env.clone()),
         Expression::CallExpression(call) => evaluate_call(call, env.clone()),
         Expression::Function(func) => evaluate_function(func, env.clone()),
         Expression::Identifier(ident) => {
@@ -118,6 +120,17 @@ fn evaluate_expression(exp: &Expression, env: Rc<RefCell<Environment>>) -> Resul
         }
         _ => Ok(Object::new(ObjectType::Null)),
     }
+}
+
+fn evaluate_hash(hash: &HashLitteral, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
+    let mut elements: HashMap<Object, Object> = HashMap::new();
+    for (key, value) in hash.elements.iter() {
+        elements.insert(
+            evaluate_expression(&key, env.clone())?,
+            evaluate_expression(&value, env.clone())?,
+        );
+    }
+    Ok(Object::new(ObjectType::Hash(HashM { elements })))
 }
 
 fn evaluate_index_op(
@@ -829,8 +842,6 @@ x
             ),
         ];
         for (input, expected) in tests.iter() {
-            println!("---------------------------------------");
-            println!("input: {}", input);
             let result = test_eval(input);
             if let ObjectType::Int(value) = result.obj_type {
                 assert_eq!(value.value, *expected)
@@ -845,5 +856,78 @@ x
     fn it_should_panic_when_accessing_out_of_bound_array() {
         let input = "[1][1];";
         test_eval(input);
+    }
+
+    #[test]
+    fn it_should_evaluted_hash_litteral() {
+        let input = "let two = \"two\";
+            {
+            \"one\": 10 - 9,
+            two: 1 + 1,
+            \"thr\" + \"ee\": 6 / 2,
+            4: 4,
+            true: 5,
+            false: 6
+            }
+        ";
+        let one = Object::new(ObjectType::Str(Str {
+            value: "one".to_string(),
+        }));
+
+        let two = Object::new(ObjectType::Str(Str {
+            value: "two".to_string(),
+        }));
+
+        let three = Object::new(ObjectType::Str(Str {
+            value: "three".to_string(),
+        }));
+
+        let four = Object::new(ObjectType::Int(Int { value: 4 }));
+        let five = Object::new(ObjectType::Bool(BoolObject { value: true }));
+        let six = Object::new(ObjectType::Bool(BoolObject { value: false }));
+        let result = test_eval(input);
+        if let ObjectType::Hash(hash) = result.obj_type {
+            let obj1 = hash.elements.get(&one).unwrap();
+            if let ObjectType::Int(int) = &obj1.obj_type {
+                println!("test1");
+                assert_eq!(int.value, 1)
+            } else {
+                panic!("Not a int object 1");
+            }
+
+            let obj2 = hash.elements.get(&two).unwrap();
+            if let ObjectType::Int(int) = &obj2.obj_type {
+                assert_eq!(int.value, 2)
+            } else {
+                panic!("Not a int object 2");
+            }
+            let obj3 = hash.elements.get(&three).unwrap();
+            if let ObjectType::Int(int) = &obj3.obj_type {
+                assert_eq!(int.value, 3)
+            } else {
+                panic!("Not a int object 3");
+            }
+            let obj4 = hash.elements.get(&four).unwrap();
+            if let ObjectType::Int(int) = &obj4.obj_type {
+                assert_eq!(int.value, 4)
+            } else {
+                panic!("Not a int object 4");
+            }
+            let obj5 = hash.elements.get(&five).unwrap();
+            if let ObjectType::Int(int) = &obj5.obj_type {
+                assert_eq!(int.value, 5)
+            } else {
+                panic!("Not a int object 5");
+            }
+
+            let obj6 = hash.elements.get(&six).unwrap();
+            if let ObjectType::Int(int) = &obj6.obj_type {
+                assert_eq!(int.value, 6)
+            } else {
+                panic!("Not a int object 6");
+            }
+        } else {
+            panic!("Not a hash");
+        }
     }
 }
