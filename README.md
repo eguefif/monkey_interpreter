@@ -27,6 +27,10 @@ Null
 10
 ```
 
+## Animated gif
+![demo1](./demo/demo2.gif)
+![demo2](./demo/demo1.gif)
+
 ## Acknowledgments
 
 Inspiration, code snippets, etc.

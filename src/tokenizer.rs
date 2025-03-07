@@ -2,7 +2,7 @@ use core::fmt;
 
 pub mod lexer;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub enum TokenType {
     Illegal,
 
@@ -24,6 +24,7 @@ pub enum TokenType {
     Noteq,
 
     Comma,
+    Colon,
     Semicolon,
     Lparen,
     Rparen,
@@ -41,7 +42,7 @@ pub enum TokenType {
     True,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct Token {
     pub token_type: TokenType,
     pub litteral: String,

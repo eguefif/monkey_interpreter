@@ -1,5 +1,9 @@
 use crate::tokenizer::{Token, TokenType};
-use std::fmt;
+use std::{
+    collections::HashMap,
+    fmt,
+    hash::{Hash, Hasher},
+};
 
 #[derive(Debug)]
 pub struct Program {
@@ -40,7 +44,7 @@ pub enum Precedence {
     Index,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
@@ -57,7 +61,7 @@ impl fmt::Display for Statement {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct LetStatement {
     pub token: Token,
     pub identifier: Identifier,
@@ -70,7 +74,7 @@ impl fmt::Display for LetStatement {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct ReturnStatement {
     pub token: Token,
     pub return_value: Option<Expression>,
@@ -85,13 +89,14 @@ impl fmt::Display for ReturnStatement {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub enum Expression {
     Identifier(Identifier),
     Int(Integer),
     Str(Str),
     Index(IndexExpression),
     Array(ArrayLitteral),
+    Hash(HashLitteral),
     Boolean(Bool),
     PrefixOp(PrefixExpression),
     InfixOp(InfixExpression),
@@ -101,9 +106,33 @@ pub enum Expression {
     None,
 }
 
+impl Hash for Expression {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        match self {
+            Expression::Hash(value) => panic!("Expression null is not a hashmap key type"),
+            Expression::Index(value) => value.hash(state),
+            Expression::Array(value) => value.hash(state),
+            Expression::Str(value) => value.hash(state),
+            Expression::Identifier(value) => value.hash(state),
+            Expression::Int(value) => value.hash(state),
+            Expression::PrefixOp(value) => value.hash(state),
+            Expression::InfixOp(value) => value.hash(state),
+            Expression::Boolean(value) => value.hash(state),
+            Expression::If(value) => value.hash(state),
+            Expression::Function(value) => value.hash(state),
+            Expression::CallExpression(value) => value.hash(state),
+            Expression::None => panic!("Expression null is not a hashmap key type"),
+        }
+    }
+}
+
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Expression::Hash(value) => write!(f, "{}", value),
             Expression::Index(value) => write!(f, "{}", value),
             Expression::Array(value) => write!(f, "{}", value),
             Expression::Str(value) => write!(f, "{}", value),
@@ -120,7 +149,7 @@ impl fmt::Display for Expression {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct Identifier {
     pub token: Token,
     pub value: String,
@@ -138,7 +167,7 @@ impl Identifier {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct ExpressionStatement {
     pub token: Token,
     pub expression: Expression,
@@ -154,7 +183,7 @@ impl fmt::Display for ExpressionStatement {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct Integer {
     pub token: Token,
     pub value: i128,
@@ -166,7 +195,7 @@ impl fmt::Display for Integer {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct Str {
     pub token: Token,
     pub value: String,
@@ -178,7 +207,7 @@ impl fmt::Display for Str {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub enum PrefixType {
     Minus,
     Bang,
@@ -191,7 +220,7 @@ pub enum PrefixType {
     Lt,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct PrefixExpression {
     pub token: Token,
     pub prefix_type: PrefixType,
@@ -204,7 +233,7 @@ impl fmt::Display for PrefixExpression {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub enum InfixType {
     Add,
     Sub,
@@ -234,7 +263,7 @@ impl fmt::Display for InfixType {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct InfixExpression {
     pub token: Token,
     pub infix_type: InfixType,
@@ -277,7 +306,7 @@ fn get_infix_type(token: &TokenType) -> InfixType {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct Bool {
     pub token: Token,
     pub value: bool,
@@ -300,7 +329,7 @@ impl Bool {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct IfExpression {
     pub token: Token,
     pub condition: Box<Expression>,
@@ -322,7 +351,7 @@ impl fmt::Display for IfExpression {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq)]
 pub struct BlockStatement {
     pub statements: Vec<Statement>,
 }
@@ -351,7 +380,7 @@ impl fmt::Display for BlockStatement {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct FunctionExpression {
     pub token: Token,
     pub params: Vec<Identifier>,
@@ -398,7 +427,7 @@ impl fmt::Display for FunctionExpression {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct CallExpression {
     pub token: Token,
     pub function: Box<Expression>,
@@ -417,7 +446,7 @@ impl fmt::Display for CallExpression {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct ArrayLitteral {
     pub token: Token,
     pub elements: Vec<Expression>,
@@ -437,7 +466,7 @@ impl fmt::Display for ArrayLitteral {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct IndexExpression {
     pub token: Token,
     pub left: Box<Expression>,
@@ -447,5 +476,38 @@ pub struct IndexExpression {
 impl fmt::Display for IndexExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}[{}])", self.left, self.index)
+    }
+}
+
+#[derive(Debug, Clone, Eq)]
+pub struct HashLitteral {
+    pub token: Token,
+    pub elements: HashMap<Expression, Expression>,
+}
+
+impl fmt::Display for HashLitteral {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut str = String::new();
+
+        for (key, value) in self.elements.iter() {
+            str.push_str(format!("{}: {}, ", key, value).as_str());
+        }
+        str.pop();
+        str.pop();
+
+        write!(f, "{{{}}}", str)
+    }
+}
+
+impl PartialEq for HashLitteral {
+    fn eq(&self, other: &HashLitteral) -> bool {
+        let str_self = format!("{}", self);
+        let other_self = format!("{}", other);
+        str_self == other_self
+    }
+    fn ne(&self, other: &HashLitteral) -> bool {
+        let str_self = format!("{}", self);
+        let other_self = format!("{}", other);
+        str_self != other_self
     }
 }
