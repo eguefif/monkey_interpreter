@@ -139,21 +139,29 @@ fn evaluate_index_op(
 ) -> Result<Object, String> {
     let left = evaluate_expression(&idx.left, env.clone())?;
     let index = evaluate_expression(&idx.index, env.clone())?;
-    if let ObjectType::Array(array) = left.obj_type {
-        if let ObjectType::Int(index) = index.obj_type {
-            if index.value as usize >= array.elements.len() {
-                return Err("Error: index out of bound".to_string());
+    match left.obj_type {
+        ObjectType::Array(array) => {
+            if let ObjectType::Int(index) = index.obj_type {
+                if index.value as usize >= array.elements.len() {
+                    return Err("Error: index out of bound".to_string());
+                }
+                let obj = &array.elements[index.value as usize];
+                Ok(Object::new_from(obj))
+            } else {
+                Err(format!("Error: index should be an INT got : {}", index))
             }
-            let obj = &array.elements[index.value as usize];
-            Ok(Object::new_from(obj))
-        } else {
-            Err(format!("Error: index should be an INT got : {}", index))
         }
-    } else {
-        Err(format!(
-            "Error in index operator: left should be an array, got: {}",
+        ObjectType::Hash(ref hash) => {
+            if let Some(result) = hash.elements.get(&index) {
+                Ok(Object::new_from(result))
+            } else {
+                Err(format!("key error: {} does not exist", left,))
+            }
+        }
+        _ => Err(format!(
+            "Error in index operator: left should be an array or a hash, got: {}",
             left,
-        ))
+        )),
     }
 }
 fn evaluate_array(array: &ArrayLitteral, env: Rc<RefCell<Environment>>) -> Result<Object, String> {
@@ -928,6 +936,26 @@ x
             }
         } else {
             panic!("Not a hash");
+        }
+    }
+
+    #[test]
+    fn it_should_evaluate_hash_index_op() {
+        let tests = [
+            ("{\"foo\": 5}[\"foo\"]", 5),
+            ("let key = \"foo\";{\"foo\": 5}[key]", 5),
+            ("{5: 5}[5]", 5),
+            ("{true: 5}[true]", 5),
+            ("{false: 5}[false]", 5),
+        ];
+
+        for (input, expected) in tests.iter() {
+            let res = test_eval(input);
+            if let ObjectType::Int(int) = res.obj_type {
+                assert_eq!(int.value, *expected);
+            } else {
+                panic!("Expected an INT in hash");
+            }
         }
     }
 }
